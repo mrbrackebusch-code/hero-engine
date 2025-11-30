@@ -189,7 +189,13 @@ namespace SpriteKind {
 }
 
 
+
+
+
+
 namespace HeroEngine {
+
+    // Block-safe function type for student logic
     export type HeroLogicFn = (
         button: string,
         heroIndex: number,
@@ -204,11 +210,12 @@ namespace HeroEngine {
         direction: string
     ) => void;
 
+    // Make the defaults also use any[] so we're 100% consistent with the hooks
     function defaultHeroLogic(
         button: string,
         heroIndex: number,
-        enemiesArr: Sprite[],
-        heroesArr: Sprite[]
+        enemiesArr: any[],
+        heroesArr: any[]
     ): number[] {
         // Do nothing / idle – safe default
         return [FAMILY.STRENGTH, 0, 0, 0, 0, ELEM.NONE, ANIM.ID.IDLE];
@@ -223,8 +230,8 @@ namespace HeroEngine {
         // no-op default
     }
 
-    // These are what the engine will actually call:
-    // These are what the engine will actually call:
+    // These are what the engine will actually call.
+    // Keeping them 'any' is fine here because Blocks will happily assign any function.
     export let hero1LogicHook: any = defaultHeroLogic;
     export let hero2LogicHook: any = defaultHeroLogic;
     export let hero3LogicHook: any = defaultHeroLogic;
@@ -236,30 +243,34 @@ namespace HeroEngine {
     export let animateHero3Hook: HeroAnimFn = defaultHeroAnim;
     export let animateHero4Hook: HeroAnimFn = defaultHeroAnim;
     
+    // Overridable hook for hero logic.
+    // Arcade: stays null → we fall back to runHeroLogicForHero.
+    // Phaser: heroEnginePhaserGlue.ts overrides this.
+    export type RunHeroLogicForHeroHook = (heroIndex: number, button: string) => number[] | null;
+    export let runHeroLogicForHeroHook: RunHeroLogicForHeroHook = null;
 
-
-    let _started = false
+    let _started = false;
 
     export function _isStarted(): boolean {
-        return _started
+        return _started;
     }
 
-    
     //% blockId=heroEngine_start
     //% block="start hero engine"
     //% group="Setup"
     //% weight=100
     export function start() {
-        if (_started) return
-        _started = true
+        if (_started) return;
+        _started = true;
 
-        ensureHeroSpriteKinds()
-        scene.setBackgroundColor(1)
-        setupHeroes()
-        setupTestEnemies()
-        setupEnemySpawners()
+        ensureHeroSpriteKinds();
+        scene.setBackgroundColor(1);
+        setupHeroes();
+        setupTestEnemies();
+        setupEnemySpawners();
     }
 }
+
 
 
 
@@ -766,33 +777,39 @@ function getHeroProfileForHeroIndex(heroIndex: number): string {
 
 
 
-
 function runHeroLogicForHero(heroIndex: number, button: string) {
-    const hero = heroes[heroIndex]
-    if (!hero) return null
+    const hero = heroes[heroIndex];
+    if (!hero) return null;
 
-    // Cast engine arrays to any[] so they match the student hook signatures
-    const localEnemies = enemies as any[]
-    const localHeroes = heroes as any[]
+    // Cast to any[] so we match the student hook signatures exactly
+    const localEnemies = enemies as any[];
+    const localHeroes = heroes as any[];
 
-    // Pick the correct hook
-    let fn: any = null
-    if (heroIndex == 0) fn = HeroEngine.hero1LogicHook
-    else if (heroIndex == 1) fn = HeroEngine.hero2LogicHook
-    else if (heroIndex == 2) fn = HeroEngine.hero3LogicHook
-    else if (heroIndex == 3) fn = HeroEngine.hero4LogicHook
-    else fn = HeroEngine.hero1LogicHook
+    // Choose the appropriate hook
+    let fn: any = null;
+    if (heroIndex == 0) fn = HeroEngine.hero1LogicHook;
+    else if (heroIndex == 1) fn = HeroEngine.hero2LogicHook;
+    else if (heroIndex == 2) fn = HeroEngine.hero3LogicHook;
+    else if (heroIndex == 3) fn = HeroEngine.hero4LogicHook;
+    else fn = HeroEngine.hero1LogicHook;
 
-    // Safety guard: if something went wrong with hooks, don't crash the VM
+    // Guard: do not let the VM try to call a non-function (this is what leads to 'iface')
     if (!fn || typeof fn !== "function") {
-        console.log("[runHeroLogicForHero] missing logic hook for hero", heroIndex)
-        return [FAMILY.STRENGTH, 0, 0, 0, 0, ELEM.NONE, ANIM.ID.IDLE]
+        console.log("[runHeroLogicForHero] invalid logic hook for hero", heroIndex, "fn=", fn);
+        return [
+            FAMILY.STRENGTH,
+            0, 0, 0, 0,
+            ELEM.NONE,
+            ANIM.ID.IDLE
+        ];
     }
 
-    // Call the student logic (or default) with boring any[] arrays
-    return fn(button, heroIndex, localEnemies, localHeroes)
+    return fn(button, heroIndex, localEnemies, localHeroes);
 }
 
+
+// Wire default implementation into overridable hook
+HeroEngine.runHeroLogicForHeroHook = runHeroLogicForHero;
 
 
 
@@ -833,7 +850,12 @@ function doHeroMoveForPlayer(playerId: number, button: string) {
     // Student logic (OUT array)
     // Shape: [family, t1, t2, t3, t4, element, animId]
     // -----------------------------
-    const out = runHeroLogicForHero(heroIndex, button)
+    // Student logic (OUT array)
+    // Shape: [family, t1, t2, t3, t4, element, animId]
+    // -----------------------------
+    const hook = HeroEngine.runHeroLogicForHeroHook || runHeroLogicForHero;
+    const out = hook(heroIndex, button);
+
 
     // Guard against bad / missing logic output
     // We expect at least 7 entries: 0..6

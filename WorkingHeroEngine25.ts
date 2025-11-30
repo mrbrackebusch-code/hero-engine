@@ -325,22 +325,23 @@ namespace userconfig {
 // --------------------------------------------------------------
 // Sprite kinds (lazy init for extension safety)
 // --------------------------------------------------------------
-
 let _heroKindsInitialized = false
 
 function ensureHeroSpriteKinds() {
     if (_heroKindsInitialized) return
     _heroKindsInitialized = true
 
-    // Attach new kinds onto the SpriteKind namespace
-    SpriteKind.Hero = SpriteKind.create()
-    SpriteKind.HeroWeapon = SpriteKind.create()
-    SpriteKind.HeroAura = SpriteKind.create()
-    SpriteKind.EnemySpawner = SpriteKind.create()
-    SpriteKind.SupportBeam = SpriteKind.create()
-    SpriteKind.SupportIcon = SpriteKind.create()
+    // In Arcade, SpriteKind.create() is normally used to allocate new IDs.
+    // In our Phaser/ESM world, that helper does not exist on this module-local
+    // SpriteKind, so we use fixed IDs instead. Values just need to be unique
+    // and non-zero.
+    if (!SpriteKind.Hero) SpriteKind.Hero = 50
+    if (!SpriteKind.HeroWeapon) SpriteKind.HeroWeapon = 51
+    if (!SpriteKind.HeroAura) SpriteKind.HeroAura = 52
+    if (!SpriteKind.EnemySpawner) SpriteKind.EnemySpawner = 53
+    if (!SpriteKind.SupportBeam) SpriteKind.SupportBeam = 54
+    if (!SpriteKind.SupportIcon) SpriteKind.SupportIcon = 55
 }
-
 
 
 

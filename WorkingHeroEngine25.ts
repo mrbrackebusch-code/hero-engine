@@ -327,21 +327,30 @@ namespace userconfig {
 // --------------------------------------------------------------
 let _heroKindsInitialized = false
 
+
 function ensureHeroSpriteKinds() {
     if (_heroKindsInitialized) return
     _heroKindsInitialized = true
+
+    const SK: any = SpriteKind as any;
+
+    // Make sure base kinds exist in this module as well.
+    // These numeric IDs match arcadeCompat.ts.
+    if (SK.Player == null) SK.Player = 1;
+    if (SK.Enemy == null) SK.Enemy = 2;
 
     // In Arcade, SpriteKind.create() is normally used to allocate new IDs.
     // In our Phaser/ESM world, that helper does not exist on this module-local
     // SpriteKind, so we use fixed IDs instead. Values just need to be unique
     // and non-zero.
-    if (!SpriteKind.Hero) SpriteKind.Hero = 50
-    if (!SpriteKind.HeroWeapon) SpriteKind.HeroWeapon = 51
-    if (!SpriteKind.HeroAura) SpriteKind.HeroAura = 52
-    if (!SpriteKind.EnemySpawner) SpriteKind.EnemySpawner = 53
-    if (!SpriteKind.SupportBeam) SpriteKind.SupportBeam = 54
-    if (!SpriteKind.SupportIcon) SpriteKind.SupportIcon = 55
+    if (SK.Hero == null) SK.Hero = 50;
+    if (SK.HeroWeapon == null) SK.HeroWeapon = 51;
+    if (SK.HeroAura == null) SK.HeroAura = 52;
+    if (SK.EnemySpawner == null) SK.EnemySpawner = 53;
+    if (SK.SupportBeam == null) SK.SupportBeam = 54;
+    if (SK.SupportIcon == null) SK.SupportIcon = 55;
 }
+
 
 
 // Phaser/ESM shim: ensure custom SpriteKinds exist before any overlaps are registered.

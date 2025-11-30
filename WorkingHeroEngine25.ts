@@ -4478,7 +4478,7 @@ game.onUpdate(function () {
 
 // Timers
 
-onUpdateInterval(80, function () {
+game.onUpdateInterval(80, function () {
     if (!HeroEngine._isStarted()) return;
 
     try {

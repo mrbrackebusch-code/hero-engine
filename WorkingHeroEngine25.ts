@@ -644,26 +644,6 @@ const AURA_COLOR_HEAL = 7 // green-ish
 
 
 
-// ==========================================
-// Optional host hero-logic hook (Phaser/VS)
-// ==========================================
-type HeroLogicFn = (
-    button: string,
-    heroIndex: number,
-    enemiesArr: Sprite[],
-    heroesArr: Sprite[]
-) => number[]
-
-type HeroLogicResolver = (
-    profile: string,
-    heroIndex: number,
-    button: string,
-    enemiesArr: Sprite[],
-    heroesArr: Sprite[]
-) => number[] | null
-
-let hostHeroLogicResolver: HeroLogicResolver = null
-
 
 
 
@@ -785,38 +765,33 @@ function getHeroProfileForHeroIndex(heroIndex: number): string {
 
 
 
+
+
 function runHeroLogicForHero(heroIndex: number, button: string) {
     const hero = heroes[heroIndex]
     if (!hero) return null
 
-    // Which profile / student owns this hero?
-    const profile = getHeroProfileForHeroIndex(heroIndex)
+    // Cast engine arrays to any[] so they match the student hook signatures
+    const localEnemies = enemies as any[]
+    const localHeroes = heroes as any[]
 
-    // 1) Optional host-provided logic (Phaser / VS only)
-    // In MakeCode, hostHeroLogicResolver will stay null and this is skipped.
-    if (hostHeroLogicResolver) {
-        const hostOut = hostHeroLogicResolver(
-            profile,
-            heroIndex,
-            button,
-            enemies,
-            heroes
-        )
-        if (hostOut && hostOut.length) return hostOut
+    // Pick the correct hook
+    let fn: any = null
+    if (heroIndex == 0) fn = HeroEngine.hero1LogicHook
+    else if (heroIndex == 1) fn = HeroEngine.hero2LogicHook
+    else if (heroIndex == 2) fn = HeroEngine.hero3LogicHook
+    else if (heroIndex == 3) fn = HeroEngine.hero4LogicHook
+    else fn = HeroEngine.hero1LogicHook
+
+    // Safety guard: if something went wrong with hooks, don't crash the VM
+    if (!fn || typeof fn !== "function") {
+        console.log("[runHeroLogicForHero] missing logic hook for hero", heroIndex)
+        return [FAMILY.STRENGTH, 0, 0, 0, 0, ELEM.NONE, ANIM.ID.IDLE]
     }
 
-    // 2) Built-in routing via hooks
-    if (heroIndex == 0) return HeroEngine.hero1LogicHook(button, heroIndex, enemies, heroes)
-    if (heroIndex == 1) return HeroEngine.hero2LogicHook(button, heroIndex, enemies, heroes)
-    if (heroIndex == 2) return HeroEngine.hero3LogicHook(button, heroIndex, enemies, heroes)
-    if (heroIndex == 3) return HeroEngine.hero4LogicHook(button, heroIndex, enemies, heroes)
-    
-    // Fallback: hero 1 logic
-    return HeroEngine.hero1LogicHook(button, heroIndex, enemies, heroes)
-
+    // Call the student logic (or default) with boring any[] arrays
+    return fn(button, heroIndex, localEnemies, localHeroes)
 }
-
-
 
 
 

@@ -797,7 +797,7 @@ function runHeroLogicForHero(heroIndex: number, button: string) {
 
     // Guard: do not let the VM try to call a non-function (this is what leads to 'iface')
     if (!fn || typeof fn !== "function") {
-        console.log("[runHeroLogicForHero] invalid logic hook for hero", heroIndex, "fn=", fn);
+        console.log("[runHeroLogicForHero] invalid logic hook for hero" + heroIndex + "fn=" + fn);
         return [
             FAMILY.STRENGTH,
             0, 0, 0, 0,

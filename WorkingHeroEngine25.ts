@@ -4434,13 +4434,36 @@ game.onUpdateInterval(500, function () {
 })
 
 
+
+
+
+
+
 // Wave spawns — randomized time/kind/location (weighted by elapsed time)
 const ENEMY_SPAWN_INTERVAL_MS = 1200
 let waveStartMs = game.runtime()
 
 game.onUpdateInterval(ENEMY_SPAWN_INTERVAL_MS, function () {
     if (!HeroEngine._isStarted()) return
+
     const elapsed = game.runtime() - waveStartMs
-    spawnEnemyFromRandomSpawnerWeighted(elapsed)
+
+    // If no spawners yet, skip
+    if (!enemySpawners || enemySpawners.length == 0) return
+
+    // Use the engine's own randint helper so we're 100% Arcade-safe
+    const idx = randint(0, enemySpawners.length - 1)
+    const s = enemySpawners[idx]
+
+    // Weight BRUTE more as time passes (same logic as before)
+    const t = Math.min(1, elapsed / 60000) // by 60s, bias near cap
+    const bruteWeight = 0.15 + 0.5 * t
+
+    if (Math.random() < bruteWeight) {
+        spawnEnemyOfKind("BRUTE", s.x, s.y)
+    } else {
+        spawnEnemyOfKind("GRUNT", s.x, s.y)
+    }
 })
+
 

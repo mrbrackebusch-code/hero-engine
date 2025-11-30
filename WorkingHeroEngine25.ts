@@ -328,28 +328,35 @@ namespace userconfig {
 let _heroKindsInitialized = false
 
 
+
 function ensureHeroSpriteKinds() {
     if (_heroKindsInitialized) return
     _heroKindsInitialized = true
 
-    const SK: any = SpriteKind as any;
+    // NOTE:
+    //  - In MakeCode Arcade, SpriteKind.Player and SpriteKind.Enemy
+    //    already exist globally. This cast does nothing harmful there.
+    //  - In the Phaser/ESM build, this gives us a writable object so we
+    //    can define Player/Enemy for this module before overlaps register.
+    const SK = <any>SpriteKind
 
     // Make sure base kinds exist in this module as well.
     // These numeric IDs match arcadeCompat.ts.
-    if (SK.Player == null) SK.Player = 1;
-    if (SK.Enemy == null) SK.Enemy = 2;
+    if (SK.Player == null) SK.Player = 1
+    if (SK.Enemy == null) SK.Enemy = 2
 
     // In Arcade, SpriteKind.create() is normally used to allocate new IDs.
     // In our Phaser/ESM world, that helper does not exist on this module-local
     // SpriteKind, so we use fixed IDs instead. Values just need to be unique
     // and non-zero.
-    if (SK.Hero == null) SK.Hero = 50;
-    if (SK.HeroWeapon == null) SK.HeroWeapon = 51;
-    if (SK.HeroAura == null) SK.HeroAura = 52;
-    if (SK.EnemySpawner == null) SK.EnemySpawner = 53;
-    if (SK.SupportBeam == null) SK.SupportBeam = 54;
-    if (SK.SupportIcon == null) SK.SupportIcon = 55;
+    if (!SK.Hero) SK.Hero = 50
+    if (!SK.HeroWeapon) SK.HeroWeapon = 51
+    if (!SK.HeroAura) SK.HeroAura = 52
+    if (!SK.EnemySpawner) SK.EnemySpawner = 53
+    if (!SK.SupportBeam) SK.SupportBeam = 54
+    if (!SK.SupportIcon) SK.SupportIcon = 55
 }
+
 
 
 

@@ -1,0 +1,28 @@
+{
+    "name": " Hero Engine",
+        "description": "",
+            "dependencies": {
+        "device": "*",
+            "arcade-sprite-data": "github:microsoft/arcade-sprite-data#v0.2.1",
+                "arcade-text": "github:microsoft/arcade-text#v1.3.0",
+                    "pxt-status-bar": "github:jwunderl/pxt-status-bar#v0.4.2"
+    },
+    "files": [
+        "main.blocks",
+        "main.ts",
+        "WorkingHeroEngine25.ts",
+        "README.md",
+        "assets.json"
+    ],
+        "testFiles": [
+            "test.ts"
+        ],
+            "targetVersions": {
+        "target": "2.0.62",
+            "targetId": "arcade"
+    },
+    "supportedTargets": [
+        "arcade"
+    ],
+        "preferredEditor": "tsprj"
+}

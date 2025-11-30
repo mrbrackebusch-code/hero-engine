@@ -1,3 +1,19 @@
+
+// --------------------------------------------------------------
+// Sprite kinds - type declarations for TS (no top-level create()) DON'T COPY THIS OVER TO PHASER! It is already there
+// --------------------------------------------------------------
+namespace SpriteKind {
+    export let Hero: number
+    export let HeroWeapon: number
+    export let HeroAura: number
+    export let EnemySpawner: number
+    export let SupportBeam: number
+    export let SupportIcon: number
+}
+
+
+
+
 // --------------------------------------------------------------
 // HERO ENGINE V20 – FUNCTION INDEX
 // --------------------------------------------------------------
@@ -176,17 +192,6 @@
 // Sprite kinds - type declarations for TS
 // --------------------------------------------------------------
 
-// --------------------------------------------------------------
-// Sprite kinds - type declarations for TS (no top-level create())
-// --------------------------------------------------------------
-namespace SpriteKind {
-    export let Hero: number
-    export let HeroWeapon: number
-    export let HeroAura: number
-    export let EnemySpawner: number
-    export let SupportBeam: number
-    export let SupportIcon: number
-}
 
 
 

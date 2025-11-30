@@ -243,7 +243,33 @@ namespace HeroEngine {
     export let animateHero3Hook: HeroAnimFn = defaultHeroAnim;
     export let animateHero4Hook: HeroAnimFn = defaultHeroAnim;
 
-    // (rest of the file unchanged)
+    
+    // Overridable hook for hero logic.
+    // Arcade: stays null → we fall back to runHeroLogicForHero.
+    // Phaser: heroEnginePhaserGlue.ts overrides this.
+    export type RunHeroLogicForHeroHook = (heroIndex: number, button: string) => number[] | null;
+    export let runHeroLogicForHeroHook: RunHeroLogicForHeroHook = null;
+
+    let _started = false;
+
+    export function _isStarted(): boolean {
+        return _started;
+    }
+
+    //% blockId=heroEngine_start
+    //% block="start hero engine"
+    //% group="Setup"
+    //% weight=100
+    export function start() {
+        if (_started) return;
+        _started = true;
+
+        ensureHeroSpriteKinds();
+        scene.setBackgroundColor(1);
+        setupHeroes();
+        setupTestEnemies();
+        setupEnemySpawners();
+    }
 }
 
 

@@ -307,6 +307,8 @@ const DBG_INTERVAL_MS = 50
 const DEBUG_INTEGRATOR = true
 const DBG_INT_INTERVAL_MS = 50
 
+const DEBUG_HERO_LOGIC = true
+
 // --------------------------------------------------------------
 // Screen config
 // Used by: spawn positions, UI layout, enemy spawners, etc.
@@ -775,15 +777,15 @@ function getHeroProfileForHeroIndex(heroIndex: number): string {
 }
 
 
-
-
-
-
 function runHeroLogicForHero(heroIndex: number, button: string) {
     const hero = heroes[heroIndex];
-    if (!hero) return null;
+    if (!hero) {
+        if (DEBUG_HERO_LOGIC) {
+            console.log("[runHeroLogicForHero] NO HERO heroIndex=" + heroIndex + " button=" + button);
+        }
+        return null;
+    }
 
-    // Cast to any[] so we match the student hook signatures exactly
     const localEnemies = enemies as any[];
     const localHeroes = heroes as any[];
 
@@ -795,9 +797,21 @@ function runHeroLogicForHero(heroIndex: number, button: string) {
     else if (heroIndex == 3) fn = HeroEngine.hero4LogicHook;
     else fn = HeroEngine.hero1LogicHook;
 
+    if (DEBUG_HERO_LOGIC) {
+        console.log(
+            "[runHeroLogicForHero] ENTER heroIndex=" + heroIndex +
+            " button=" + button +
+            " fnType=" + (typeof fn)
+        );
+    }
+
     // Guard: do not let the VM try to call a non-function (this is what leads to 'iface')
     if (!fn || typeof fn !== "function") {
-        console.log("[runHeroLogicForHero] invalid logic hook for hero" + heroIndex + "fn=" + fn);
+        console.log(
+            "[runHeroLogicForHero] INVALID HOOK heroIndex=" + heroIndex +
+            " button=" + button +
+            " fn=" + fn
+        );
         return [
             FAMILY.STRENGTH,
             0, 0, 0, 0,
@@ -806,9 +820,33 @@ function runHeroLogicForHero(heroIndex: number, button: string) {
         ];
     }
 
-    return fn(button, heroIndex, localEnemies, localHeroes);
-}
+    let out: number[];
+    try {
+        out = fn(button, heroIndex, localEnemies, localHeroes);
+    } catch (e) {
+        console.log(
+            "[runHeroLogicForHero] ERROR heroIndex=" + heroIndex +
+            " button=" + button +
+            " error=" + e
+        );
+        return [
+            FAMILY.STRENGTH,
+            0, 0, 0, 0,
+            ELEM.NONE,
+            ANIM.ID.IDLE
+        ];
+    }
 
+    if (DEBUG_HERO_LOGIC) {
+        console.log(
+            "[runHeroLogicForHero] OUT heroIndex=" + heroIndex +
+            " button=" + button +
+            " out=" + (out ? "[" + out.join(",") + "]" : "null")
+        );
+    }
+
+    return out;
+}
 
 // Wire default implementation into overridable hook
 HeroEngine.runHeroLogicForHeroHook = runHeroLogicForHero;
@@ -838,6 +876,10 @@ function doHeroMoveForPlayer(playerId: number, button: string) {
     if (!hero) return
     const now = game.runtime()
 
+    if (DEBUG_HERO_LOGIC) {
+        console.log("[doHeroMoveForPlayer] ENTER playerId=" + playerId + "button=" + button + "heroIndex=" + heroIndex)
+    }
+    
     // Trap world time so the wrapper/save system can see it
     worldRuntimeMs = now
 
@@ -852,35 +894,69 @@ function doHeroMoveForPlayer(playerId: number, button: string) {
     if (supportPuzzleActive[heroIndex]) return
 
 
-    // -----------------------------
-    // Student logic (OUT array)
-    // Shape: [family, t1, t2, t3, t4, element, animId]
-    // -----------------------------
+
+
+
+
+        // -----------------------------
     // Student logic (OUT array)
     // Shape: [family, t1, t2, t3, t4, element, animId]
     // -----------------------------
     const hook = HeroEngine.runHeroLogicForHeroHook || runHeroLogicForHero;
-    const out = hook(heroIndex, button);
 
+    if (DEBUG_HERO_LOGIC) {
+        console.log(
+            "[doHeroMoveForPlayer] BEFORE HOOK heroIndex=" + heroIndex +
+            " button=" + button +
+            " hookType=" + (typeof hook)
+        );
+    }
 
+    let out: number[];
+    try {
+        out = hook(heroIndex, button);
+    } catch (e) {
+        console.log(
+            "[doHeroMoveForPlayer] ERROR calling hook heroIndex=" + heroIndex +
+            " button=" + button +
+            " error=" + e
+        );
+        return;
+    }
 
-    
+    if (DEBUG_HERO_LOGIC) {
+        console.log(
+            "[doHeroMoveForPlayer] AFTER HOOK heroIndex=" + heroIndex +
+            " button=" + button +
+            " out=" + (out ? "[" + out.join(",") + "]" : "null")
+        );
+    }
+
     // Guard against bad / missing logic output
     // We expect at least 7 entries: 0..6
     if (!out || out.length < 7) {
-        console.log(`[MOVE] hero=${heroIndex} button=${button} invalid OUT=${out ? "[" + out.join(",") + "]" : "null"}`);
+        console.log(
+            "[MOVE] heroIndex=" + heroIndex +
+            " button=" + button +
+            " INVALID OUT=" + (out ? "[" + out.join(",") + "]" : "null")
+        );
         return;
     }
 
     // Positional unpack (avoid OUT.* at runtime in Arcade)
     const family = out[0] | 0;  // FAMILY
-    const t1 = out[1] | 0;  // TRAIT1
-    const t2 = out[2] | 0;  // TRAIT2
-    const t3 = out[3] | 0;  // TRAIT3
-    const t4 = out[4] | 0;  // TRAIT4
-    const element = out[5] | 0;  // ELEMENT
+    const t1 = out[1] | 0;      // TRAIT1
+    const t2 = out[2] | 0;      // TRAIT2
+    const t3 = out[3] | 0;      // TRAIT3
+    const t4 = out[4] | 0;      // TRAIT4
+    const element = out[5] | 0; // ELEMENT
     const animId = out[6] | 0;  // ANIM_ID
 
+
+
+
+
+    
     // traits[1..4] are the same pools as before; traits[5] holds element for future use
     const traits = [0, t1, t2, t3, t4, element]
 
@@ -4398,22 +4474,60 @@ game.onUpdate(function () {
 
 })
 
-// Timers
-game.onUpdateInterval(80, function () {
-    if (!HeroEngine._isStarted()) return
-//    if (p1Intent != "") doHeroMoveForPlayer(1, p1Intent)
-    if (p1Intent != "") {
-        if (DEBUG_INTEGRATOR) {
-            console.log("[INTENT] P1 " + p1Intent + " at " + (game.runtime() | 0))
-        }
-        doHeroMoveForPlayer(1, p1Intent)
-    }
 
-    if (p2Intent != "") doHeroMoveForPlayer(2, p2Intent)
-    if (p3Intent != "") doHeroMoveForPlayer(3, p3Intent)
-    if (p4Intent != "") doHeroMoveForPlayer(4, p4Intent)
-}
-)
+
+// Timers
+
+onUpdateInterval(80, function () {
+    if (!HeroEngine._isStarted()) return;
+
+    try {
+        const nowMs = game.runtime() | 0;
+
+        if (p1Intent != "") {
+            if (DEBUG_HERO_LOGIC) {
+                console.log("[TIMER80] BEFORE P1 intent=" + p1Intent + " timeMs=" + nowMs);
+            }
+            doHeroMoveForPlayer(1, p1Intent);
+            if (DEBUG_HERO_LOGIC) {
+                console.log("[TIMER80] AFTER P1 intent=" + p1Intent + " timeMs=" + nowMs);
+            }
+        }
+
+        if (p2Intent != "") {
+            if (DEBUG_HERO_LOGIC) {
+                console.log("[TIMER80] BEFORE P2 intent=" + p2Intent + " timeMs=" + nowMs);
+            }
+            doHeroMoveForPlayer(2, p2Intent);
+            if (DEBUG_HERO_LOGIC) {
+                console.log("[TIMER80] AFTER P2 intent=" + p2Intent + " timeMs=" + nowMs);
+            }
+        }
+
+        if (p3Intent != "") {
+            if (DEBUG_HERO_LOGIC) {
+                console.log("[TIMER80] BEFORE P3 intent=" + p3Intent + " timeMs=" + nowMs);
+            }
+            doHeroMoveForPlayer(3, p3Intent);
+            if (DEBUG_HERO_LOGIC) {
+                console.log("[TIMER80] AFTER P3 intent=" + p3Intent + " timeMs=" + nowMs);
+            }
+        }
+
+        if (p4Intent != "") {
+            if (DEBUG_HERO_LOGIC) {
+                console.log("[TIMER80] BEFORE P4 intent=" + p4Intent + " timeMs=" + nowMs);
+            }
+            doHeroMoveForPlayer(4, p4Intent);
+            if (DEBUG_HERO_LOGIC) {
+                console.log("[TIMER80] AFTER P4 intent=" + p4Intent + " timeMs=" + nowMs);
+            }
+        }
+    } catch (e) {
+        console.log("[TIMER80] ERROR in doHeroMoveForPlayer:" + e);
+    }
+});
+
 
 game.onUpdateInterval(500, function () { 
     if (!HeroEngine._isStarted()) return

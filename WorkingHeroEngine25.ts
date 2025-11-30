@@ -202,9 +202,10 @@ namespace HeroEngine {
     export type HeroLogicFn = (
         button: string,
         heroIndex: number,
-        enemiesArr: Sprite[],
-        heroesArr: Sprite[]
+        enemiesArr: any[],
+        heroesArr: any[]
     ) => number[];
+
 
     export type HeroAnimFn = (
         hero: Sprite,
@@ -213,15 +214,16 @@ namespace HeroEngine {
         direction: string
     ) => void;
 
+    
     function defaultHeroLogic(
         button: string,
         heroIndex: number,
-        enemiesArr: Sprite[],
-        heroesArr: Sprite[]
+        enemiesArr: any[],
+        heroesArr: any[]
     ): number[] {
-        // Do nothing / idle – safe default
         return [FAMILY.STRENGTH, 0, 0, 0, 0, ELEM.NONE, ANIM.ID.IDLE];
     }
+
 
     function defaultHeroAnim(
         hero: Sprite,
@@ -233,10 +235,11 @@ namespace HeroEngine {
     }
 
     // Strongly typed hooks now
-    export let hero1LogicHook: HeroLogicFn = defaultHeroLogic;
-    export let hero2LogicHook: HeroLogicFn = defaultHeroLogic;
-    export let hero3LogicHook: HeroLogicFn = defaultHeroLogic;
-    export let hero4LogicHook: HeroLogicFn = defaultHeroLogic;
+    export let hero1LogicHook: any = defaultHeroLogic;
+    export let hero2LogicHook: any = defaultHeroLogic;
+    export let hero3LogicHook: any = defaultHeroLogic;
+    export let hero4LogicHook: any = defaultHeroLogic;
+
 
     export let animateHero1Hook: HeroAnimFn = defaultHeroAnim;
     export let animateHero2Hook: HeroAnimFn = defaultHeroAnim;

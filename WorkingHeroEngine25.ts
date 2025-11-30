@@ -1584,7 +1584,7 @@ function triggerSupportGlowPulse(heroIndex: number) {
     })
 }
 
-
+ensureHeroSpriteKinds();
 
 
 

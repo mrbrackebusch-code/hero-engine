@@ -1,10 +1,3 @@
-
-
-
-
-
-
-
 // --------------------------------------------------------------
 // HERO ENGINE V20 – FUNCTION INDEX
 // --------------------------------------------------------------
@@ -670,18 +663,6 @@ type HeroLogicResolver = (
 ) => number[] | null
 
 let hostHeroLogicResolver: HeroLogicResolver = null
-
-// Exists in both MC and Phaser builds.
-// In MC: nobody calls this → hostHeroLogicResolver stays null.
-// In Phaser: heroLogicHost.ts calls it via globalThis (see below).
-function __setHostHeroLogicResolver(fn: HeroLogicResolver) {
-    hostHeroLogicResolver = fn
-}
-
-// Make it visible to the Phaser side without using `export` in this file.
-const __g_any: any = (globalThis as any)
-__g_any.__setHostHeroLogicResolver = __setHostHeroLogicResolver
-
 
 
 

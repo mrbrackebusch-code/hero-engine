@@ -247,6 +247,11 @@ namespace HeroEngine {
 
     let _started = false
 
+    export function _isStarted(): boolean {
+        return _started
+    }
+
+    
     //% blockId=heroEngine_start
     //% block="start hero engine"
     //% group="Setup"
@@ -1502,6 +1507,7 @@ function triggerSupportGlowPulse(heroIndex: number) {
     const flashInterval = 60 // ms
 
     game.onUpdateInterval(flashInterval, function () {
+        if (!HeroEngine._isStarted()) return
         if (!aura || (aura.flags & sprites.Flag.Destroyed)) return
 
         ticks++
@@ -4205,6 +4211,7 @@ function flashEnemyOnDamage(enemy: Sprite) {
     const flashDuration = 150, flashInterval = 50
     const start = game.runtime()
     game.onUpdate(function () {
+        if (!HeroEngine._isStarted()) return
         if (!enemy || (enemy.flags & sprites.Flag.Destroyed)) return
         const elapsed = game.runtime() - start
         if (elapsed >= flashDuration) { enemy.setFlag(SpriteFlag.Invisible, false); return }
@@ -4397,6 +4404,7 @@ function updateEnemyEffects(now: number) {
 
 // Master update
 game.onUpdate(function () {
+    if (!HeroEngine._isStarted()) return
     updateHeroFacingsFromVelocity()
     updatePlayerInputs()
     const now = game.runtime()
@@ -4427,7 +4435,7 @@ game.onUpdate(function () {
 
 // Timers
 game.onUpdateInterval(80, function () {
-    
+    if (!HeroEngine._isStarted()) return
 //    if (p1Intent != "") doHeroMoveForPlayer(1, p1Intent)
     if (p1Intent != "") {
         if (DEBUG_INTEGRATOR) {
@@ -4442,7 +4450,10 @@ game.onUpdateInterval(80, function () {
 }
 )
 
-game.onUpdateInterval(500, function () { regenHeroManaAll(2) })
+game.onUpdateInterval(500, function () { 
+    if (!HeroEngine._isStarted()) return
+    regenHeroManaAll(2) 
+})
 
 
 // Wave spawns — randomized time/kind/location (weighted by elapsed time)
@@ -4450,13 +4461,8 @@ const ENEMY_SPAWN_INTERVAL_MS = 1200
 let waveStartMs = game.runtime()
 
 game.onUpdateInterval(ENEMY_SPAWN_INTERVAL_MS, function () {
+    if (!HeroEngine._isStarted()) return
     const elapsed = game.runtime() - waveStartMs
     spawnEnemyFromRandomSpawnerWeighted(elapsed)
 })
 
-// Startup
-ensureHeroSpriteKinds()
-scene.setBackgroundColor(1)
-setupHeroes()
-setupTestEnemies()
-setupEnemySpawners()

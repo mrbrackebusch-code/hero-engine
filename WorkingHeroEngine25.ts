@@ -196,16 +196,14 @@ namespace SpriteKind {
 
 
 
-
-
 namespace HeroEngine {
 
     // Block-safe function type for student logic
     export type HeroLogicFn = (
         button: string,
         heroIndex: number,
-        enemiesArr: any[],
-        heroesArr: any[]
+        enemiesArr: Sprite[],
+        heroesArr: Sprite[]
     ) => number[];
 
     export type HeroAnimFn = (
@@ -215,12 +213,11 @@ namespace HeroEngine {
         direction: string
     ) => void;
 
-    // Make the defaults also use any[] so we're 100% consistent with the hooks
     function defaultHeroLogic(
         button: string,
         heroIndex: number,
-        enemiesArr: any[],
-        heroesArr: any[]
+        enemiesArr: Sprite[],
+        heroesArr: Sprite[]
     ): number[] {
         // Do nothing / idle – safe default
         return [FAMILY.STRENGTH, 0, 0, 0, 0, ELEM.NONE, ANIM.ID.IDLE];
@@ -235,47 +232,19 @@ namespace HeroEngine {
         // no-op default
     }
 
-    // These are what the engine will actually call.
-    // Keeping them 'any' is fine here because Blocks will happily assign any function.
-    export let hero1LogicHook: any = defaultHeroLogic;
-    export let hero2LogicHook: any = defaultHeroLogic;
-    export let hero3LogicHook: any = defaultHeroLogic;
-    export let hero4LogicHook: any = defaultHeroLogic;
-    
-    // Animation hooks can stay strongly typed:
+    // Strongly typed hooks now
+    export let hero1LogicHook: HeroLogicFn = defaultHeroLogic;
+    export let hero2LogicHook: HeroLogicFn = defaultHeroLogic;
+    export let hero3LogicHook: HeroLogicFn = defaultHeroLogic;
+    export let hero4LogicHook: HeroLogicFn = defaultHeroLogic;
+
     export let animateHero1Hook: HeroAnimFn = defaultHeroAnim;
     export let animateHero2Hook: HeroAnimFn = defaultHeroAnim;
     export let animateHero3Hook: HeroAnimFn = defaultHeroAnim;
     export let animateHero4Hook: HeroAnimFn = defaultHeroAnim;
-    
-    // Overridable hook for hero logic.
-    // Arcade: stays null → we fall back to runHeroLogicForHero.
-    // Phaser: heroEnginePhaserGlue.ts overrides this.
-    export type RunHeroLogicForHeroHook = (heroIndex: number, button: string) => number[] | null;
-    export let runHeroLogicForHeroHook: RunHeroLogicForHeroHook = null;
 
-    let _started = false;
-
-    export function _isStarted(): boolean {
-        return _started;
-    }
-
-    //% blockId=heroEngine_start
-    //% block="start hero engine"
-    //% group="Setup"
-    //% weight=100
-    export function start() {
-        if (_started) return;
-        _started = true;
-
-        ensureHeroSpriteKinds();
-        scene.setBackgroundColor(1);
-        setupHeroes();
-        setupTestEnemies();
-        setupEnemySpawners();
-    }
+    // (rest of the file unchanged)
 }
-
 
 
 

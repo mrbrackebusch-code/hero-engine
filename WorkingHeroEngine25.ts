@@ -344,6 +344,11 @@ function ensureHeroSpriteKinds() {
 }
 
 
+// Phaser/ESM shim: ensure custom SpriteKinds exist before any overlaps are registered.
+ensureHeroSpriteKinds();
+
+
+
 
 // --------------------------------------------------------------
 // Family / element enums

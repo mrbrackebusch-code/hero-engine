@@ -330,36 +330,14 @@ function ensureHeroSpriteKinds() {
     if (_heroKindsInitialized) return
     _heroKindsInitialized = true
 
-    // ---------------------------------------------------------
-    // Base kinds: MakeCode already defines these.
-    // Phaser DOES NOT, because SpriteKind becomes module-local.
-    // We patch them with bracket notation + ts-ignore so both
-    // compilers accept it without casts or eval.
-    // ---------------------------------------------------------
-
-    // @ts-ignore
-    if (SpriteKind["Player"] == null) SpriteKind["Player"] = 1
-
-    // @ts-ignore
-    if (SpriteKind["Enemy"] == null) SpriteKind["Enemy"] = 2
-
-    // ---------------------------------------------------------
-    // Custom kinds for the engine
-    // These work fine in both environments.
-    // ---------------------------------------------------------
-
-    // @ts-ignore
-    if (SpriteKind["Hero"] == null) SpriteKind["Hero"] = 50
-    // @ts-ignore
-    if (SpriteKind["HeroWeapon"] == null) SpriteKind["HeroWeapon"] = 51
-    // @ts-ignore
-    if (SpriteKind["HeroAura"] == null) SpriteKind["HeroAura"] = 52
-    // @ts-ignore
-    if (SpriteKind["EnemySpawner"] == null) SpriteKind["EnemySpawner"] = 53
-    // @ts-ignore
-    if (SpriteKind["SupportBeam"] == null) SpriteKind["SupportBeam"] = 54
-    // @ts-ignore
-    if (SpriteKind["SupportIcon"] == null) SpriteKind["SupportIcon"] = 55
+    // Pure Arcade-safe version; only touches custom kinds.
+    // (In Arcade, SpriteKind.Player / Enemy are defined by runtime.)
+    if (!SpriteKind.Hero) SpriteKind.Hero = SpriteKind.create()
+    if (!SpriteKind.HeroWeapon) SpriteKind.HeroWeapon = SpriteKind.create()
+    if (!SpriteKind.HeroAura) SpriteKind.HeroAura = SpriteKind.create()
+    if (!SpriteKind.EnemySpawner) SpriteKind.EnemySpawner = SpriteKind.create()
+    if (!SpriteKind.SupportBeam) SpriteKind.SupportBeam = SpriteKind.create()
+    if (!SpriteKind.SupportIcon) SpriteKind.SupportIcon = SpriteKind.create()
 }
 
 

@@ -328,17 +328,17 @@ namespace userconfig {
 let _heroKindsInitialized = false
 
 
+// --------------------------------------------------------------
+// Sprite kinds (lazy init for extension safety)
+// --------------------------------------------------------------
 
 function ensureHeroSpriteKinds() {
     if (_heroKindsInitialized) return
     _heroKindsInitialized = true
 
-    // NOTE:
-    //  - In MakeCode Arcade, SpriteKind.Player and SpriteKind.Enemy
-    //    already exist globally. This cast does nothing harmful there.
-    //  - In the Phaser/ESM build, this gives us a writable object so we
-    //    can define Player/Enemy for this module before overlaps register.
-    const SK = <any>SpriteKind
+    // Use a loose alias so MakeCode TS is happy and we still
+    // can poke at SpriteKind like a plain object in Phaser.
+    let SK: any = SpriteKind
 
     // Make sure base kinds exist in this module as well.
     // These numeric IDs match arcadeCompat.ts.
@@ -356,8 +356,6 @@ function ensureHeroSpriteKinds() {
     if (!SK.SupportBeam) SK.SupportBeam = 54
     if (!SK.SupportIcon) SK.SupportIcon = 55
 }
-
-
 
 
 // Phaser/ESM shim: ensure custom SpriteKinds exist before any overlaps are registered.

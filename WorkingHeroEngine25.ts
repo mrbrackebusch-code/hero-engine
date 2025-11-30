@@ -330,36 +330,37 @@ function ensureHeroSpriteKinds() {
     if (_heroKindsInitialized) return
     _heroKindsInitialized = true
 
-    // Phaser/ESM shim:
-    // In the Phaser build, this module's SpriteKind may NOT see Player/Enemy
-    // from other files because namespaces get scoped per-module.
-    // We can't use casts like `<any>` without upsetting MakeCode's TS,
-    // so we use a tiny eval string that runs at *runtime* and can see the
-    // local SpriteKind symbol in this module.
-    try {
-        eval(`
-            if (typeof SpriteKind !== "undefined") {
-                if (SpriteKind.Player == null) SpriteKind.Player = 1;
-                if (SpriteKind.Enemy == null) SpriteKind.Enemy = 2;
-            }
-        `);
-    } catch (e) {
-        // In Arcade, eval might be restricted; that's fine.
-        // Core runtime already defines SpriteKind.Player / .Enemy.
-    }
+    // ---------------------------------------------------------
+    // Base kinds: MakeCode already defines these.
+    // Phaser DOES NOT, because SpriteKind becomes module-local.
+    // We patch them with bracket notation + ts-ignore so both
+    // compilers accept it without casts or eval.
+    // ---------------------------------------------------------
 
-    // In Arcade, SpriteKind.create() is normally used to allocate new IDs.
-    // In our Phaser/ESM world, that helper does not exist on this module-local
-    // SpriteKind, so we use fixed IDs instead. Values just need to be unique
-    // and non-zero.
-    if (!SpriteKind.Hero) SpriteKind.Hero = 50
-    if (!SpriteKind.HeroWeapon) SpriteKind.HeroWeapon = 51
-    if (!SpriteKind.HeroAura) SpriteKind.HeroAura = 52
-    if (!SpriteKind.EnemySpawner) SpriteKind.EnemySpawner = 53
-    if (!SpriteKind.SupportBeam) SpriteKind.SupportBeam = 54
-    if (!SpriteKind.SupportIcon) SpriteKind.SupportIcon = 55
+    // @ts-ignore
+    if (SpriteKind["Player"] == null) SpriteKind["Player"] = 1
+
+    // @ts-ignore
+    if (SpriteKind["Enemy"] == null) SpriteKind["Enemy"] = 2
+
+    // ---------------------------------------------------------
+    // Custom kinds for the engine
+    // These work fine in both environments.
+    // ---------------------------------------------------------
+
+    // @ts-ignore
+    if (SpriteKind["Hero"] == null) SpriteKind["Hero"] = 50
+    // @ts-ignore
+    if (SpriteKind["HeroWeapon"] == null) SpriteKind["HeroWeapon"] = 51
+    // @ts-ignore
+    if (SpriteKind["HeroAura"] == null) SpriteKind["HeroAura"] = 52
+    // @ts-ignore
+    if (SpriteKind["EnemySpawner"] == null) SpriteKind["EnemySpawner"] = 53
+    // @ts-ignore
+    if (SpriteKind["SupportBeam"] == null) SpriteKind["SupportBeam"] = 54
+    // @ts-ignore
+    if (SpriteKind["SupportIcon"] == null) SpriteKind["SupportIcon"] = 55
 }
-
 
 
 // Phaser/ESM shim: ensure custom SpriteKinds exist before any overlaps are registered.

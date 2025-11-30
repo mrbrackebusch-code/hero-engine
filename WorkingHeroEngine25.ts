@@ -777,6 +777,8 @@ function getHeroProfileForHeroIndex(heroIndex: number): string {
 
 
 
+
+
 function runHeroLogicForHero(heroIndex: number, button: string) {
     const hero = heroes[heroIndex];
     if (!hero) return null;
@@ -814,6 +816,9 @@ HeroEngine.runHeroLogicForHeroHook = runHeroLogicForHero;
 
 
 
+
+
+
 function calculateMoveStatsForFamily(family: number, button: string, traits: number[]) {
     const baseTime = getBaseMoveDurationMs(button, family)
     if (family == FAMILY.STRENGTH) return calculateStrengthStats(baseTime, traits)
@@ -822,6 +827,7 @@ function calculateMoveStatsForFamily(family: number, button: string, traits: num
     if (family == FAMILY.HEAL) return calculateHealStats(baseTime, traits)
     return makeBaseStats(baseTime)
 }
+
 
 
 
@@ -857,6 +863,8 @@ function doHeroMoveForPlayer(playerId: number, button: string) {
     const out = hook(heroIndex, button);
 
 
+
+    
     // Guard against bad / missing logic output
     // We expect at least 7 entries: 0..6
     if (!out || out.length < 7) {
@@ -4024,27 +4032,6 @@ function setupEnemySpawners() {
 }
 
 
-
-function setupEnemySpawnersBUGGED() {
-    const W = userconfig.ARCADE_SCREEN_WIDTH, H = userconfig.ARCADE_SCREEN_HEIGHT, inset = 8
-    const coords = [[inset, inset], [W - inset, inset], [inset, H - inset], [W - inset, H - inset]]
-    for (let i = 0; i < coords.length; i++) {
-        const s = sprites.create(image.create(2, 2), SpriteKind.EnemySpawner)
-        s.x = coords[i][0]; s.y = coords[i][1]; s.z = 1; s.image.fill(1)
-        enemySpawners.push(s)
-    }
-}
-
-function spawnEnemyFromRandomSpawnerWeighted(elapsedMs: number) {
-    if (enemySpawners.length == 0) return
-    const idx = Math.randomRange(0, enemySpawners.length - 1)
-    const s = enemySpawners[idx]
-    // Weight BRUTE more as time goes on (sigmoid-ish)
-    const t = Math.min(1, elapsedMs / 60000) // by 60s, bias near cap
-    const bruteWeight = 0.15 + 0.5 * t
-    if (Math.random() < bruteWeight) spawnEnemyOfKind("BRUTE", s.x, s.y)
-    else spawnEnemyOfKind("GRUNT", s.x, s.y)
-}
 
 // Enemy homing + simple attack cycle
 function updateEnemyHoming(now: number) {

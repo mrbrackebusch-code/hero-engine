@@ -487,7 +487,11 @@ const HERO_DATA = {
     BUSY_UNTIL: "busyUntil",           // heroBusyUntil[heroIndex]
     MOVE_SPEED_MULT: "mvMult",         // heroMoveSpeedMult[heroIndex]
     DAMAGE_AMP_MULT: "dmgMult",        // heroDamageAmpMult[heroIndex]
-    BUFF_JSON: "buffsJson"             // JSON snapshot of heroBuffs[heroIndex]
+    BUFF_JSON: "buffsJson",             // JSON snapshot of heroBuffs[heroIndex]
+
+    // NEW: for tile-collision rollback
+    PREV_X: "prevX",
+    PREV_Y: "prevY"
 }
 
 
@@ -890,6 +894,59 @@ function _readTile(r: number, c: number): number {
     if (r < 0 || r >= _engineWorldTileMap.length) return TILE_WALL
     if (c < 0 || c >= _engineWorldTileMap[0].length) return TILE_WALL
     return _engineWorldTileMap[r][c]
+}
+
+
+
+function resolveHeroTilemapCollisions(): void {
+    if (!_engineWorldTileMap || _engineWorldTileMap.length === 0) return
+
+    const map = _engineWorldTileMap
+    const rows = map.length
+    const cols = map[0].length
+    const tileSize = WORLD_TILE_SIZE
+
+    for (let hi = 0; hi < heroes.length; hi++) {
+        const h = heroes[hi]
+        if (!h) continue
+
+        const halfW = h.width >> 1
+        const halfH = h.height >> 1
+
+        const left = h.x - halfW
+        const right = h.x + halfW - 1
+        const top = h.y - halfH
+        const bottom = h.y + halfH - 1
+
+        const minCol = Math.idiv(left, tileSize)
+        const maxCol = Math.idiv(right, tileSize)
+        const minRow = Math.idiv(top, tileSize)
+        const maxRow = Math.idiv(bottom, tileSize)
+
+        let hitWall = false
+
+        for (let r = minRow; r <= maxRow; r++) {
+            if (r < 0 || r >= rows) continue
+            const rowArr = map[r]
+            for (let c = minCol; c <= maxCol; c++) {
+                if (c < 0 || c >= cols) continue
+                if (rowArr[c] === TILE_WALL) {
+                    hitWall = true
+                    break
+                }
+            }
+            if (hitWall) break
+        }
+
+        if (hitWall) {
+            const prevX = sprites.readDataNumber(h, HERO_DATA.PREV_X)
+            const prevY = sprites.readDataNumber(h, HERO_DATA.PREV_Y)
+            if (prevX || prevX === 0) h.x = prevX
+            if (prevY || prevY === 0) h.y = prevY
+            h.vx = 0
+            h.vy = 0
+        }
+    }
 }
 
 
@@ -1390,6 +1447,10 @@ function createHeroForPlayer(playerId: number, startX: number, startY: number) {
     const hero = sprites.create(image.create(16, 16), SpriteKind.Player)
     hero.x = startX; hero.y = startY; hero.z = 20
 
+    // NEW: seed previous position for collisions
+    sprites.setDataNumber(hero, HERO_DATA.PREV_X, hero.x)
+    sprites.setDataNumber(hero, HERO_DATA.PREV_Y, hero.y)
+    
     const heroIndex = heroes.length; heroes.push(hero)
     playerToHeroIndex[playerId] = heroIndex
 
@@ -4880,6 +4941,16 @@ function updateEnemyEffects(now: number) {
 // Master update
 game.onUpdate(function () {
     if (!HeroEngine._isStarted()) return
+
+    // NEW: snapshot previous positions for all heroes
+    for (let hi = 0; hi < heroes.length; hi++) {
+        const h = heroes[hi]
+        if (h) {
+            sprites.setDataNumber(h, HERO_DATA.PREV_X, h.x)
+            sprites.setDataNumber(h, HERO_DATA.PREV_Y, h.y)
+        }
+    }
+
     updateHeroFacingsFromVelocity()
     updatePlayerInputs()
     const now = game.runtime()
@@ -4901,6 +4972,9 @@ game.onUpdate(function () {
 
     updateHeroAuras()                  // aura + combo meter
 
+    // NEW: enforce collisions with logical wall tiles
+    resolveHeroTilemapCollisions()
+    
     for (let hi = 0; hi < heroes.length; hi++) { const h = heroes[hi]; if (h) debugAgilityDashProgress(h, hi) }
     updateEnemyHoming(now)             // AI + attacks
 

@@ -986,6 +986,7 @@ function doHeroMoveForPlayer(playerId: number, button: string) {
 
 
     // -----------------------------
+    // -----------------------------
     // Mana cost & check
     // -----------------------------
     // Simple sum of the four trait values
@@ -1000,6 +1001,12 @@ function doHeroMoveForPlayer(playerId: number, button: string) {
     mana -= manaCost
     sprites.setDataNumber(hero, HERO_DATA.MANA, mana)
     updateHeroManaBar(heroIndex)
+
+    // Floating negative blue mana number
+    if (manaCost > 0) {
+        showDamageNumber(hero.x, hero.y - 10, -manaCost, "mana")
+    }
+
 
     // -----------------------------
     // Aim / movement setup
@@ -1445,9 +1452,28 @@ function regenHeroManaAll(percentOfMax: number) {
     }
 }
 
-function showDamageNumber(x: number, y: number, amount: number) {
+
+function showDamageNumber(x: number, y: number, amount: number, kind?: string) {
     const txt = textsprite.create("" + amount)
-    txt.setPosition(x, y); txt.setMaxFontHeight(6); txt.lifespan = 400; txt.vy = -20
+    txt.setPosition(x, y)
+    txt.setMaxFontHeight(6)
+    txt.lifespan = 400
+    txt.vy = -20
+
+    let k = (kind || "damage").toLowerCase()
+    if (k.indexOf("heal") >= 0) {
+        // Heal: green
+        txt.setTextColor(7)
+        txt.setBorder(1, 15)
+    } else if (k.indexOf("mana") >= 0) {
+        // Mana: blue, negative amounts are fine
+        txt.setTextColor(1)
+        txt.setBorder(1, 15)
+    } else {
+        // Damage: red
+        txt.setTextColor(2)
+        txt.setBorder(1, 15)
+    }
 }
 
 
@@ -3604,7 +3630,12 @@ function applyHealToHeroIndex(heroIndex: number, amount: number) {
     hp = Math.min(maxHp, hp + amount)
     sprites.setDataNumber(hero, HERO_DATA.HP, hp)
     updateHeroHPBar(heroIndex)
+
+    if (amount > 0) {
+        showDamageNumber(hero.x, hero.y - 6, amount, "heal")
+    }
 }
+
 
 
 //Heal/Support traits should be calculated using: heal amount at traits[1], haste amount at traits[2], damage amplification at traits[3], damage reduction amount at traits[4]
@@ -4106,13 +4137,25 @@ function setupEnemySpawners() {
     ]
 
     for (let i = 0; i < coords.length; i++) {
-        const s = sprites.create(image.create(2, 2), SpriteKind.EnemySpawner)
+            const spawnerImg = img`
+        . . . . 1 1 1 . . . .
+        . . 1 1 1 1 1 1 . . .
+        . 1 1 1 0 0 1 1 1 . .
+        . 1 1 0 0 0 0 1 1 . .
+        . 1 1 0 0 0 0 1 1 . .
+        . 1 1 1 0 0 1 1 1 . .
+        . . 1 1 1 1 1 1 . . .
+        . . . . 1 1 1 . . . .
+    `
+    for (let i = 0; i < coords.length; i++) {
+        const s = sprites.create(spawnerImg, SpriteKind.EnemySpawner)
         s.x = coords[i][0]
         s.y = coords[i][1]
         s.z = 1
-        s.image.fill(1)
-
         enemySpawners.push(s)
+    }
+}
+
     }
 }
 
@@ -4551,37 +4594,72 @@ game.onUpdateInterval(500, function () {
 // Wave spawns — scripted waves with short breaks between them.
 // The interval below is the *tick* rate for the spawner; the wave table
 // controls when we are allowed to spawn and which kinds appear.
+
+function showWaveBanner(waveIdx: number) {
+    let label = "Wave " + (waveIdx + 1)
+    if (WAVE_DEFS && waveIdx >= 0 && waveIdx < WAVE_DEFS.length) {
+        const w = WAVE_DEFS[waveIdx]
+        if (w && (w as any).label) label = (w as any).label
+    }
+
+    const txt = textsprite.create(label)
+    txt.setMaxFontHeight(8)
+    txt.setTextColor(1)  // blue
+    txt.setBorder(1, 15) // white border
+    txt.lifespan = 900
+    txt.vy = -10
+
+    const W = userconfig.ARCADE_SCREEN_WIDTH
+    const H = userconfig.ARCADE_SCREEN_HEIGHT
+    txt.setPosition(W / 2, H / 4)
+}
+
+
+
+// Wave spawns — scripted waves with short breaks between them.
+// The interval below is the *tick* rate; WAVE_DEFS controls spawn density + types.
 const ENEMY_SPAWN_INTERVAL_MS = 1200
 
-// Simple wave script – tweak numbers/types freely without touching logic.
 const WAVE_DEFS = [
     {
         label: "Wave 1 – Warmup",
-        durationMs: 14000,
-        breakMs: 3500,
+        durationMs: 12000,
+        breakMs: 4000,
+        spawnChance: 0.5,              // 50% of ticks spawn
         kinds: ["GRUNT"],
         weights: [1]
     },
     {
-        label: "Wave 2 – Runners",
-        durationMs: 16000,
-        breakMs: 3500,
-        kinds: ["GRUNT", "RUNNER"],
-        weights: [3, 2]
-    },
-    {
-        label: "Wave 3 – Brutes Arrive",
-        durationMs: 18000,
+        label: "Wave 2 – More Grunts",
+        durationMs: 14000,
         breakMs: 4000,
-        kinds: ["GRUNT", "RUNNER", "BRUTE"],
-        weights: [3, 2, 2]
+        spawnChance: 0.75,             // 75% of ticks spawn
+        kinds: ["GRUNT"],
+        weights: [1]
     },
     {
-        label: "Wave 4 – Elite Mix",
-        durationMs: 20000,
+        label: "Wave 3 – Runners Join",
+        durationMs: 16000,
         breakMs: 4500,
+        spawnChance: 0.8,
+        kinds: ["GRUNT", "RUNNER"],
+        weights: [3, 1]                // few runners
+    },
+    {
+        label: "Wave 4 – Brutes Arrive",
+        durationMs: 18000,
+        breakMs: 4500,
+        spawnChance: 0.9,
+        kinds: ["GRUNT", "RUNNER", "BRUTE"],
+        weights: [3, 2, 1]
+    },
+    {
+        label: "Wave 5 – Elite Mix",
+        durationMs: 20000,
+        breakMs: 5000,
+        spawnChance: 1.0,
         kinds: ["GRUNT", "RUNNER", "BRUTE", "ELITE"],
-        weights: [3, 3, 2, 1]
+        weights: [3, 3, 2, 2]
     }
 ]
 
@@ -4597,7 +4675,6 @@ function pickEnemyKindForWave(waveIdx: number): string {
     const w = WAVE_DEFS[waveIdx]
     if (!w || !w.kinds || !w.weights || w.kinds.length == 0) return "GRUNT"
 
-    // Integer-weighted random pick using randint (Arcade-safe).
     let total = 0
     for (let i = 0; i < w.weights.length; i++) {
         const wt = w.weights[i] | 0
@@ -4620,7 +4697,6 @@ game.onUpdateInterval(ENEMY_SPAWN_INTERVAL_MS, function () {
 
     const now = game.runtime()
 
-    // No waves table? Fallback to simple GRUNT spam.
     if (!WAVE_DEFS || WAVE_DEFS.length == 0) {
         const idx = randint(0, enemySpawners.length - 1)
         const s = enemySpawners[idx]
@@ -4628,7 +4704,7 @@ game.onUpdateInterval(ENEMY_SPAWN_INTERVAL_MS, function () {
         return
     }
 
-    // Handle phase transitions first (break <-> active).
+    // Phase transitions
     if (now >= wavePhaseUntilMs) {
         if (currentWaveIsBreak) {
             // Start / resume a wave
@@ -4637,6 +4713,7 @@ game.onUpdateInterval(ENEMY_SPAWN_INTERVAL_MS, function () {
                 ? WAVE_DEFS[currentWaveIndex]
                 : WAVE_DEFS[WAVE_DEFS.length - 1]
             wavePhaseUntilMs = now + (w.durationMs | 0)
+            showWaveBanner(currentWaveIndex)
         } else {
             // Wave just ended – schedule next break
             currentWaveIsBreak = true
@@ -4648,19 +4725,28 @@ game.onUpdateInterval(ENEMY_SPAWN_INTERVAL_MS, function () {
                 : WAVE_DEFS[WAVE_DEFS.length - 1]
             wavePhaseUntilMs = now + (w.breakMs | 0)
         }
-        // Don't spawn on the exact transition tick – feels cleaner.
         return
     }
 
     if (currentWaveIsBreak) {
-        // In a rest window – no new enemies.
+        // Rest window: no spawns
         return
     }
 
-    // Active wave: spawn one enemy from a random spawner using the wave weights.
+    // Active wave: spawn with wave-specific spawnChance
+    const wave = (currentWaveIndex < WAVE_DEFS.length)
+        ? WAVE_DEFS[currentWaveIndex]
+        : WAVE_DEFS[WAVE_DEFS.length - 1]
+    const chance = (wave as any).spawnChance || 1
+    if (chance < 1 && Math.random() > chance) return
+
     const idx = randint(0, enemySpawners.length - 1)
     const s = enemySpawners[idx]
     const kind = pickEnemyKindForWave(currentWaveIndex)
     spawnEnemyOfKind(kind, s.x, s.y)
 })
+
+
+
+
 

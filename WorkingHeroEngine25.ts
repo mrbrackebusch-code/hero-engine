@@ -956,11 +956,11 @@ function _resolveTilemapCollisionsForGroup(group: Sprite[], label: string): void
     const doFrameLog = (_tileCollFrame % 30) === 0
     if (doFrameLog) {
         console.log(
-            "[tileColl] frame", _tileCollFrame,
-            "group", label,
-            "count", group.length,
-            "map", rows + "x" + cols,
-            "tileSize", tileSize
+            "[tileColl] frame" + _tileCollFrame +
+            "group" + label +
+            "count" + group.length +
+            "map" + rows + "x" + cols +
+            "tileSize" + tileSize
         )
     }
 
@@ -1016,20 +1016,20 @@ function _resolveTilemapCollisionsForGroup(group: Sprite[], label: string): void
 
         if (blockedX || blockedY) {
             console.log(
-                "[tileColl]", label, "#", i,
-                "blockedX", blockedX, "blockedY", blockedY,
-                "prev=(", prevX, ",", prevY, ")",
-                "curr=(", cx, ",", cy, ")",
-                "final=(", finalX, ",", finalY, ")"
+                "[tileColl]" + label + "#" + i +
+                "blockedX" + blockedX + "blockedY" + blockedY +
+                "prev=(" + prevX + "," + prevY + ")" +
+                "curr=(" + cx + "," + cy + ")" +
+                "final=(" + finalX + "," + finalY + ")"
             )
         } else if (doFrameLog && i === 0) {
             // Occasional sample log even when no collision,
             // so we know the system is actually running.
             console.log(
-                "[tileColl]", label, "#", i,
-                "no collision",
-                "prev=(", prevX, ",", prevY, ")",
-                "curr=(", cx, ",", cy, ")"
+                "[tileColl]" + label + "#" + i +
+                "no collision" +
+                "prev=(" + prevX + "," + prevY + ")" +
+                "curr=(" + cx + "," + cy + ")"
             )
         }
     }

@@ -4792,6 +4792,165 @@ function setupEnemySpawners() {
 }
 
 
+// --------------------------------------------------------------
+// Enemy steering: tile-aware BFS toward hero
+// --------------------------------------------------------------
+
+const _ENEMY_DIR_R: number[] = [-1, 1, 0, 0, -1, -1, 1, 1]
+const _ENEMY_DIR_C: number[] = [0, 0, -1, 1, -1, 1, -1, 1]
+
+// Compute a steering vector for enemy e toward hero h using the tilemap.
+// Falls back to straight-line homing if map is missing or path not found.
+function _enemySteerTowardHero(e: Sprite, h: Sprite, speed: number): void {
+    if (!_engineWorldTileMap || _engineWorldTileMap.length === 0) {
+        // Fallback: old behavior
+        const dx0 = h.x - e.x
+        const dy0 = h.y - e.y
+        let mag0 = Math.sqrt(dx0 * dx0 + dy0 * dy0)
+        if (mag0 === 0) mag0 = 1
+        e.vx = Math.idiv(dx0 * speed, mag0)
+        e.vy = Math.idiv(dy0 * speed, mag0)
+        return
+    }
+
+    const map = _engineWorldTileMap
+    const rows = map.length
+    const cols = map[0].length
+    const tileSize = WORLD_TILE_SIZE
+
+    // Convert world coords to tile coords
+    let startC = Math.idiv(e.x, tileSize)
+    let startR = Math.idiv(e.y, tileSize)
+    let goalC = Math.idiv(h.x, tileSize)
+    let goalR = Math.idiv(h.y, tileSize)
+
+    // Clamp into map bounds
+    if (startR < 0) startR = 0
+    if (startR >= rows) startR = rows - 1
+    if (startC < 0) startC = 0
+    if (startC >= cols) startC = cols - 1
+
+    if (goalR < 0) goalR = 0
+    if (goalR >= rows) goalR = rows - 1
+    if (goalC < 0) goalC = 0
+    if (goalC >= cols) goalC = cols - 1
+
+    // If enemy and hero end up in the same tile, just home directly
+    if (startR === goalR && startC === goalC) {
+        const dxSame = h.x - e.x
+        const dySame = h.y - e.y
+        let magSame = Math.sqrt(dxSame * dxSame + dySame * dySame)
+        if (magSame === 0) magSame = 1
+        e.vx = Math.idiv(dxSame * speed, magSame)
+        e.vy = Math.idiv(dySame * speed, magSame)
+        return
+    }
+
+    // BFS setup
+    const visited: number[][] = []
+    const prevR: number[][] = []
+    const prevC: number[][] = []
+    for (let r = 0; r < rows; r++) {
+        const vRow: number[] = []
+        const prRow: number[] = []
+        const pcRow: number[] = []
+        for (let c = 0; c < cols; c++) {
+            vRow.push(0)
+            prRow.push(-1)
+            pcRow.push(-1)
+        }
+        visited.push(vRow)
+        prevR.push(prRow)
+        prevC.push(pcRow)
+    }
+
+    const qr: number[] = []
+    const qc: number[] = []
+    let head = 0
+
+    qr.push(startR)
+    qc.push(startC)
+    visited[startR][startC] = 1
+    prevR[startR][startC] = startR
+    prevC[startR][startC] = startC
+
+    let found = false
+
+    while (head < qr.length) {
+        const r = qr[head]
+        const c = qc[head]
+        head++
+
+        if (r === goalR && c === goalC) {
+            found = true
+            break
+        }
+
+        for (let k = 0; k < _ENEMY_DIR_R.length; k++) {
+            const nr = r + _ENEMY_DIR_R[k]
+            const nc = c + _ENEMY_DIR_C[k]
+
+            if (nr < 0 || nr >= rows || nc < 0 || nc >= cols) continue
+            if (visited[nr][nc]) continue
+
+            // Treat walls as blocked, but allow goal tile even if hero is standing in/near it.
+            if (map[nr][nc] === TILE_WALL && !(nr === goalR && nc === goalC)) continue
+
+            visited[nr][nc] = 1
+            prevR[nr][nc] = r
+            prevC[nr][nc] = c
+            qr.push(nr)
+            qc.push(nc)
+        }
+    }
+
+    if (!found) {
+        // No path: fallback to straight-line homing
+        const dxFail = h.x - e.x
+        const dyFail = h.y - e.y
+        let magFail = Math.sqrt(dxFail * dxFail + dyFail * dyFail)
+        if (magFail === 0) magFail = 1
+        e.vx = Math.idiv(dxFail * speed, magFail)
+        e.vy = Math.idiv(dyFail * speed, magFail)
+        return
+    }
+
+    // Backtrack from goal to find the next tile after the start
+    let tr = goalR
+    let tc = goalC
+
+    while (!(prevR[tr][tc] === startR && prevC[tr][tc] === startC)) {
+        const pr = prevR[tr][tc]
+        const pc = prevC[tr][tc]
+        // Safety: if something is weird, bail to straight-line
+        if (pr < 0 || pc < 0) {
+            const dxSafe = h.x - e.x
+            const dySafe = h.y - e.y
+            let magSafe = Math.sqrt(dxSafe * dxSafe + dySafe * dySafe)
+            if (magSafe === 0) magSafe = 1
+            e.vx = Math.idiv(dxSafe * speed, magSafe)
+            e.vy = Math.idiv(dySafe * speed, magSafe)
+            return
+        }
+        tr = pr
+        tc = pc
+    }
+
+    // (tr, tc) is now the next tile on the path.
+    const targetX = tc * tileSize + tileSize / 2
+    const targetY = tr * tileSize + tileSize / 2
+
+    const dx = targetX - e.x
+    const dy = targetY - e.y
+    let mag = Math.sqrt(dx * dx + dy * dy)
+    if (mag === 0) mag = 1
+
+    e.vx = Math.idiv(dx * speed, mag)
+    e.vy = Math.idiv(dy * speed, mag)
+}
+
+
+
 
 
 // Enemy homing + simple attack cycle
@@ -4866,7 +5025,8 @@ function updateEnemyHoming(now: number) {
             if (now >= atkUntil) { phase = 0; sprites.setDataNumber(e, ENEMY_DATA.ATK_PHASE, 0) }
         } else {
             // Normal homing
-            e.vx = Math.idiv(dx * speed, mag); e.vy = Math.idiv(dy * speed, mag)
+            _enemySteerTowardHero(e, h, speed)
+            //e.vx = Math.idiv(dx * speed, mag); e.vy = Math.idiv(dy * speed, mag)
         }
     }
 }

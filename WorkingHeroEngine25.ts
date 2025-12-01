@@ -1774,10 +1774,10 @@ function calculateStrengthStats(baseTimeMs: number, traits: number[]) {
     const stats = makeBaseStats(baseTimeMs)
 
     // Pull raw trait values, floor at 0, NO upper cap
-    let tWind = (traits[1] | 0)
-    let tReach = (traits[2] | 0)
-    let tArc = (traits[3] | 0)
-    let tKnock = (traits[4] | 0)
+    let tWind = (traits[1] | 0) // windup & damage
+    let tReach = (traits[2] | 0) // reach distance
+    let tArc = (traits[3] | 0)   // total arc degrees
+    let tKnock = (traits[4] | 0) // knockback amount
 
     if (tWind < 0) tWind = 0
     if (tReach < 0) tReach = 0
@@ -1785,37 +1785,49 @@ function calculateStrengthStats(baseTimeMs: number, traits: number[]) {
     if (tKnock < 0) tKnock = 0
 
     // ----------------------------------------------------
-    // WINDUP (traits[1]) → damage, move duration, swing time
+    // DAMAGE (traits[1])
     // ----------------------------------------------------
     // Damage starts at 80%, then +2% per point of tWind
-    // (no upper bound; can get absurd)
     stats[STAT.DAMAGE_MULT] = 80 + tWind * 2
 
-    // Move duration: baseTimeMs plus 10ms per point of tWind
-    stats[STAT.MOVE_DURATION] = baseTimeMs + tWind * 10
+    // ----------------------------------------------------
+    // TIMING: windup (pre-cast) + swing (actual arc)
+    // ----------------------------------------------------
+    // We treat baseTimeMs as the *total* lock at tWind=0, then:
+    //   moveDuration = windupBase + tWind*10 + SWING_MS
+    //   windupMs    = moveDuration - SWING_MS
+    const BASE_SWING_MS = 220
 
-    // Swing animation: 400ms plus 5ms per point of tWind
-    stats[STAT.STRENGTH_SWING_MS] = 400 + tWind * 5
+    let windupBase = baseTimeMs - BASE_SWING_MS
+    if (windupBase < 80) windupBase = 80 // always some visible windup
+
+    const windupMs = windupBase + tWind * 10
+    const totalMoveMs = windupMs + BASE_SWING_MS
+
+    // Constant swing, trait-driven windup
+    stats[STAT.STRENGTH_SWING_MS] = BASE_SWING_MS
+    stats[STAT.MOVE_DURATION] = totalMoveMs
 
     // ----------------------------------------------------
-    // REACH (traits[2]) → lunge speed
+    // LUNGE: Strength = tiny crawl forward during lock
     // ----------------------------------------------------
-    // Lunge speed: base 10, +1 per point of tReach (unbounded)
-    stats[STAT.LUNGE_SPEED] = 10 + tReach
+    // This feeds the generic lunge block:
+    //   hero.vx = aimX * LUNGE_SPEED; hero.vy = aimY * LUNGE_SPEED
+    // We ignore tReach here; reach is handled in the hitbox shape.
+    const STRENGTH_CRAWL_SPEED = 5 // px/s-ish velocity; feels like a slow lean
+    stats[STAT.LUNGE_SPEED] = STRENGTH_CRAWL_SPEED
 
     // ----------------------------------------------------
     // ARC (traits[3]) → total swing arc degrees
     // ----------------------------------------------------
-    // Base 30°, +1° per point of tArc, but NEVER above 360°
-    let arcDeg = 30 + tArc
+    let arcDeg = 1 + tArc
     if (arcDeg > 360) arcDeg = 360
     stats[STAT.STRENGTH_TOTAL_ARC_DEG] = arcDeg
 
     // ----------------------------------------------------
     // KNOCKBACK (traits[4]) → knockback percentage
     // ----------------------------------------------------
-    // Knockback: 150% base, +5% per point of tKnock (unbounded)
-    stats[STAT.KNOCKBACK_PCT] = 150 + tKnock * 5
+    stats[STAT.KNOCKBACK_PCT] = 10 + tKnock * 10
 
     return stats
 }
@@ -1844,20 +1856,43 @@ function executeStrengthMove(
     const knockbackPct = stats[STAT.KNOCKBACK_PCT] | 0
 
     // Strength-specific animation knobs (centralized in calculateStrengthStats)
-    const swingDurationMs = stats[STAT.STRENGTH_SWING_MS] || 220
-    const totalArcDeg = stats[STAT.STRENGTH_TOTAL_ARC_DEG] || 150
+    const swingDurationMsStat = stats[STAT.STRENGTH_SWING_MS] || 220
+    let moveDuration = stats[STAT.MOVE_DURATION] | 0
+    if (moveDuration <= swingDurationMsStat) moveDuration = swingDurationMsStat
 
+    // Windup is the pre-cast delay; swing is the actual arc duration
+    const windupMs = moveDuration - swingDurationMsStat
+    const totalArcDeg = stats[STAT.STRENGTH_TOTAL_ARC_DEG] || 150
     const isHeal = false // Strength move never heals
 
-    spawnStrengthSwingProjectile(
-        heroIndex, hero,
-        dmg, isHeal, button,
-        slowPct, slowDurationMs,
-        weakenPct, weakenDurationMs,
-        knockbackPct,
-        swingDurationMs,
-        totalArcDeg
-    )
+    const startMs = game.runtime()
+    let fired = false
+
+    // Delay the *actual* smash until after windupMs
+    game.onUpdate(function () {
+        if (fired) return
+
+        const now = game.runtime()
+        if (now - startMs < windupMs) return
+
+        const h = heroes[heroIndex]
+        if (!h || (h.flags & sprites.Flag.Destroyed)) {
+            fired = true
+            return
+        }
+
+        fired = true
+
+        spawnStrengthSwingProjectile(
+            heroIndex, h,
+            dmg, isHeal, button,
+            slowPct, slowDurationMs,
+            weakenPct, weakenDurationMs,
+            knockbackPct,
+            swingDurationMsStat,
+            totalArcDeg
+        )
+    })
 }
 
 
@@ -1965,6 +2000,8 @@ function findHeroLeadingEdgeDistance(hero: Sprite, nx: number, ny: number): numb
     return lastOpaqueDist
 }
 
+
+
 function spawnStrengthSwingProjectile(
     heroIndex: number,
     hero: Sprite,
@@ -1994,13 +2031,18 @@ function spawnStrengthSwingProjectile(
     // Inner radius: circle that fully contains hero sprite + aura + spacing
     const inner0 = getStrengthInnerRadiusForHero(hero)
 
-    // "Reach" = how far beyond that inner circle this move extends.
-    // For now, we hardcode to roughly one hero-size; later this becomes trait-driven.
-    const reachFromInner = Math.max(hero.width, hero.height)
+    // ----------------------------------------------------
+    // REACH: baseline just outside aura + trait-driven extra
+    // ----------------------------------------------------
+    let tReach = sprites.readDataNumber(hero, HERO_DATA.TRAIT2) | 0
+    if (tReach < 0) tReach = 0
+
+    const baseExtraReach = 4      // tiny bit beyond aura even at 0 reach
+    const extraPerPoint = 1       // 1px per trait point; tweak to taste
+    const reachFromInner = baseExtraReach + tReach * extraPerPoint
 
     // Create initial image at progress = 0 (tiny nub / initial thrust)
     const img0 = buildStrengthSmashBitmap(nx, ny, inner0, reachFromInner, totalArcDeg, 0)
-
 
     const proj = sprites.create(img0, SpriteKind.HeroWeapon)
     proj.z = hero.z + 1
@@ -2008,12 +2050,7 @@ function spawnStrengthSwingProjectile(
     proj.vy = 0
     proj.setPosition(hero.x, hero.y)
 
-    const swingDuration = 220
-
-    // Persist parameters for per-frame updater
-    sprites.setDataNumber(proj, PROJ_DATA.START_TIME, now)
-    sprites.setDataNumber(proj, "SS_SWING_MS", swingDuration)
-
+    const swingDuration = swingDurationMs || 220
 
     // Persist parameters for per-frame updater
     sprites.setDataNumber(proj, PROJ_DATA.START_TIME, now)
@@ -2022,9 +2059,9 @@ function spawnStrengthSwingProjectile(
     sprites.setDataNumber(proj, "SS_NX", nx)
     sprites.setDataNumber(proj, "SS_NY", ny)
 
-    // Semantics changed:
-    //  - "SS_ATTACH" now stores inner0 (the inner radius from hero center)
-    //  - "SS_REACH_FRONT" now stores the extra reach beyond inner0
+    // Semantics:
+    //  - "SS_ATTACH" stores inner0 (inner radius from hero center)
+    //  - "SS_REACH_FRONT" stores extra reach beyond inner0
     sprites.setDataNumber(proj, "SS_ATTACH", inner0)
     sprites.setDataNumber(proj, "SS_REACH_FRONT", reachFromInner)
 
@@ -2044,6 +2081,8 @@ function spawnStrengthSwingProjectile(
     sprites.setDataNumber(proj, PROJ_DATA.KNOCKBACK_PCT, knockbackPct)
     sprites.setDataString(proj, PROJ_DATA.MOVE_TYPE, "strengthSwing")
 }
+
+
 
 function updateStrengthProjectilesMotionFor(
     proj: Sprite, hero: Sprite, heroIndex: number, nowMs: number, iInArray: number

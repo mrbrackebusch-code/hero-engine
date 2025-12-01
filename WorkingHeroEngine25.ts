@@ -943,6 +943,8 @@ function _boxOverlapsWall(
     return false
 }
 
+
+
 // Soft-slide resolver for a group (heroes or enemies)
 function _resolveTilemapCollisionsForGroup(group: Sprite[], label: string): void {
     if (!_engineWorldTileMap || _engineWorldTileMap.length === 0) return
@@ -1035,12 +1037,112 @@ function _resolveTilemapCollisionsForGroup(group: Sprite[], label: string): void
     }
 }
 
+function resolveHeroTilemapCollisions(): void {
+    if (!_engineWorldTileMap || _engineWorldTileMap.length === 0) return
+
+    const map = _engineWorldTileMap
+    const rows = map.length
+    const cols = map[0].length
+    const tileSize = WORLD_TILE_SIZE
+
+    // Resolve collision for a single sprite (hero or enemy)
+    function resolveForSprite(s: Sprite) {
+        if (!s) return
+
+        const halfW = s.width >> 1
+        const halfH = s.height >> 1
+
+        // Run a couple of passes in case we overlap more than one tile
+        for (let iter = 0; iter < 3; iter++) {
+            const left = s.x - halfW
+            const right = s.x + halfW - 1
+            const top = s.y - halfH
+            const bottom = s.y + halfH - 1
+
+            const minCol = Math.idiv(left, tileSize)
+            const maxCol = Math.idiv(right, tileSize)
+            const minRow = Math.idiv(top, tileSize)
+            const maxRow = Math.idiv(bottom, tileSize)
+
+            let moved = false
+
+            for (let r = minRow; r <= maxRow; r++) {
+                if (r < 0 || r >= rows) continue
+                const rowArr = map[r]
+                for (let c = minCol; c <= maxCol; c++) {
+                    if (c < 0 || c >= cols) continue
+                    if (rowArr[c] !== TILE_WALL) continue
+
+                    const tileLeft = c * tileSize
+                    const tileRight = tileLeft + tileSize
+                    const tileTop = r * tileSize
+                    const tileBottom = tileTop + tileSize
+
+                    // Compute overlaps on each side
+                    const overlapLeft = right - tileLeft
+                    const overlapRight = tileRight - left
+                    const overlapTop = bottom - tileTop
+                    const overlapBottom = tileBottom - top
+
+                    // If any are <= 0, AABBs don't overlap on that axis
+                    if (overlapLeft <= 0 || overlapRight <= 0 || overlapTop <= 0 || overlapBottom <= 0) {
+                        continue
+                    }
+
+                    // Minimal penetration on each axis
+                    const penX = overlapLeft < overlapRight ? overlapLeft : overlapRight
+                    const penY = overlapTop < overlapBottom ? overlapTop : overlapBottom
+
+                    if (penX < penY) {
+                        // Push in X
+                        const tileCenterX = tileLeft + tileSize / 2
+                        if (s.x < tileCenterX) {
+                            s.x -= penX
+                        } else {
+                            s.x += penX
+                        }
+                        // Soft slide: kill only X velocity
+                        s.vx = 0
+                    } else {
+                        // Push in Y
+                        const tileCenterY = tileTop + tileSize / 2
+                        if (s.y < tileCenterY) {
+                            s.y -= penY
+                        } else {
+                            s.y += penY
+                        }
+                        // Soft slide: kill only Y velocity
+                        s.vy = 0
+                    }
+
+                    moved = true
+                }
+            }
+
+            // If we didn't adjust position this pass, we are out of walls
+            if (!moved) break
+        }
+    }
+
+    // Apply to all heroes
+    for (let hi = 0; hi < heroes.length; hi++) {
+        const h = heroes[hi]
+        if (h) resolveForSprite(h)
+    }
+
+    // Apply to all enemies
+    for (let ei = 0; ei < enemies.length; ei++) {
+        const e = enemies[ei]
+        if (e) resolveForSprite(e)
+    }
+}
+
 // Main entry to call from onUpdate
 function resolveTilemapCollisions(): void {
     _tileCollFrame++
-
-    _resolveTilemapCollisionsForGroup(heroes, "Hero")
-    _resolveTilemapCollisionsForGroup(enemies, "Enemy")
+    resolveHeroTilemapCollisions()
+    //_resolveTilemapCollisionsForGroup(heroes, "Hero")
+    //_resolveTilemapCollisionsForGroup(enemies, "Enemy")
 }
 
 

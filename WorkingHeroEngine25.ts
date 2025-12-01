@@ -4046,12 +4046,14 @@ function completeSupportPuzzleForHero(heroIndex: number) {
 
 
 const ENEMY_KIND = {
-    GRUNT: { maxHP: 50, speed: 28, touchDamage: 8, tint: 6 /* green */ },
-    BRUTE: { maxHP: 160, speed: 18, touchDamage: 15, tint: 2 /* red */ }
+    GRUNT:  { maxHP: 50,  speed: 28, touchDamage: 8,  tint: 6  /* green  */ },
+    RUNNER: { maxHP: 30,  speed: 42, touchDamage: 6,  tint: 7  /* yellow */ },
+    BRUTE:  { maxHP: 160, speed: 18, touchDamage: 15, tint: 2  /* red    */ },
+    ELITE:  { maxHP: 260, speed: 22, touchDamage: 20, tint: 10 /* purple */ }
 }
 
 function enemyImageForKind(kind: string): Image {
-    // Base enemy
+    // Base enemy sprite uses color 6 for the body; we tint that per kind.
     let imgBase = img`
         . . . . . . c c c c . . . . . .
         . . . . c c 6 6 6 6 c c . . . .
@@ -4061,15 +4063,16 @@ function enemyImageForKind(kind: string): Image {
         . c 6 6 6 6 6 6 6 6 6 6 6 6 c .
         . . . . c c 6 6 6 6 c c . . . .
     `
-    if (kind == "BRUTE") {
-        // crude "big red" variant: tint 6→2 (no scaling API in Arcade TS subset)
-        imgBase = tintImageReplace(imgBase, 6, 2)
+    const spec = (ENEMY_KIND as any)[kind] || ENEMY_KIND.GRUNT
+    const tint = spec.tint || 6
+    if (tint != 6) {
+        imgBase = tintImageReplace(imgBase, 6, tint)
     }
     return imgBase
 }
 
 function spawnEnemyOfKind(kind: string, x: number, y: number) {
-    const spec = (kind == "BRUTE") ? ENEMY_KIND.BRUTE : ENEMY_KIND.GRUNT
+    const spec = (ENEMY_KIND as any)[kind] || ENEMY_KIND.GRUNT
     const enemy = sprites.create(enemyImageForKind(kind), SpriteKind.Enemy)
     enemy.x = x; enemy.y = y; enemy.z = 10
     const eIndex = enemies.length; enemies.push(enemy)
@@ -4545,32 +4548,119 @@ game.onUpdateInterval(500, function () {
 
 
 
-
-// Wave spawns — randomized time/kind/location (weighted by elapsed time)
+// Wave spawns — scripted waves with short breaks between them.
+// The interval below is the *tick* rate for the spawner; the wave table
+// controls when we are allowed to spawn and which kinds appear.
 const ENEMY_SPAWN_INTERVAL_MS = 1200
-let waveStartMs = game.runtime()
+
+// Simple wave script – tweak numbers/types freely without touching logic.
+const WAVE_DEFS = [
+    {
+        label: "Wave 1 – Warmup",
+        durationMs: 14000,
+        breakMs: 3500,
+        kinds: ["GRUNT"],
+        weights: [1]
+    },
+    {
+        label: "Wave 2 – Runners",
+        durationMs: 16000,
+        breakMs: 3500,
+        kinds: ["GRUNT", "RUNNER"],
+        weights: [3, 2]
+    },
+    {
+        label: "Wave 3 – Brutes Arrive",
+        durationMs: 18000,
+        breakMs: 4000,
+        kinds: ["GRUNT", "RUNNER", "BRUTE"],
+        weights: [3, 2, 2]
+    },
+    {
+        label: "Wave 4 – Elite Mix",
+        durationMs: 20000,
+        breakMs: 4500,
+        kinds: ["GRUNT", "RUNNER", "BRUTE", "ELITE"],
+        weights: [3, 3, 2, 1]
+    }
+]
+
+// Wave state
+let currentWaveIndex = 0
+let currentWaveIsBreak = true
+let wavePhaseUntilMs = game.runtime() + 1000 // short delay before first wave
+
+function pickEnemyKindForWave(waveIdx: number): string {
+    if (!WAVE_DEFS || WAVE_DEFS.length == 0) return "GRUNT"
+    if (waveIdx < 0) waveIdx = 0
+    if (waveIdx >= WAVE_DEFS.length) waveIdx = WAVE_DEFS.length - 1
+    const w = WAVE_DEFS[waveIdx]
+    if (!w || !w.kinds || !w.weights || w.kinds.length == 0) return "GRUNT"
+
+    // Integer-weighted random pick using randint (Arcade-safe).
+    let total = 0
+    for (let i = 0; i < w.weights.length; i++) {
+        const wt = w.weights[i] | 0
+        if (wt > 0) total += wt
+    }
+    if (total <= 0) return "GRUNT"
+    let roll = randint(1, total)
+    for (let i = 0; i < w.kinds.length; i++) {
+        const wt = w.weights[i] | 0
+        if (wt <= 0) continue
+        if (roll <= wt) return w.kinds[i]
+        roll -= wt
+    }
+    return "GRUNT"
+}
 
 game.onUpdateInterval(ENEMY_SPAWN_INTERVAL_MS, function () {
     if (!HeroEngine._isStarted()) return
-
-    const elapsed = game.runtime() - waveStartMs
-
-    // If no spawners yet, skip
     if (!enemySpawners || enemySpawners.length == 0) return
 
-    // Use the engine's own randint helper so we're 100% Arcade-safe
+    const now = game.runtime()
+
+    // No waves table? Fallback to simple GRUNT spam.
+    if (!WAVE_DEFS || WAVE_DEFS.length == 0) {
+        const idx = randint(0, enemySpawners.length - 1)
+        const s = enemySpawners[idx]
+        spawnEnemyOfKind("GRUNT", s.x, s.y)
+        return
+    }
+
+    // Handle phase transitions first (break <-> active).
+    if (now >= wavePhaseUntilMs) {
+        if (currentWaveIsBreak) {
+            // Start / resume a wave
+            currentWaveIsBreak = false
+            const w = (currentWaveIndex < WAVE_DEFS.length)
+                ? WAVE_DEFS[currentWaveIndex]
+                : WAVE_DEFS[WAVE_DEFS.length - 1]
+            wavePhaseUntilMs = now + (w.durationMs | 0)
+        } else {
+            // Wave just ended – schedule next break
+            currentWaveIsBreak = true
+            if (currentWaveIndex < WAVE_DEFS.length - 1) {
+                currentWaveIndex++
+            }
+            const w = (currentWaveIndex < WAVE_DEFS.length)
+                ? WAVE_DEFS[currentWaveIndex]
+                : WAVE_DEFS[WAVE_DEFS.length - 1]
+            wavePhaseUntilMs = now + (w.breakMs | 0)
+        }
+        // Don't spawn on the exact transition tick – feels cleaner.
+        return
+    }
+
+    if (currentWaveIsBreak) {
+        // In a rest window – no new enemies.
+        return
+    }
+
+    // Active wave: spawn one enemy from a random spawner using the wave weights.
     const idx = randint(0, enemySpawners.length - 1)
     const s = enemySpawners[idx]
-
-    // Weight BRUTE more as time passes (same logic as before)
-    const t = Math.min(1, elapsed / 60000) // by 60s, bias near cap
-    const bruteWeight = 0.15 + 0.5 * t
-
-    if (Math.random() < bruteWeight) {
-        spawnEnemyOfKind("BRUTE", s.x, s.y)
-    } else {
-        spawnEnemyOfKind("GRUNT", s.x, s.y)
-    }
+    const kind = pickEnemyKindForWave(currentWaveIndex)
+    spawnEnemyOfKind(kind, s.x, s.y)
 })
-
 

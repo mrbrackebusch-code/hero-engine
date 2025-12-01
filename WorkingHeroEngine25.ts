@@ -9,6 +9,7 @@ namespace SpriteKind {
     export let EnemySpawner: number
     export let SupportBeam: number
     export let SupportIcon: number
+    export let Wall: number
 }
 
 
@@ -37,7 +38,16 @@ namespace SpriteKind {
 //   r2() – Round a value to 2 decimal places (numeric helper).
 //   r3() – Round a value to 3 decimal places (numeric helper).
 //
-// SECTION 3 - STUDENT HOOKS: HERO LOGIC & ANIMATION
+//
+// SECTION 2.5 - TILEMAP AND WORLD GENERATION
+//    initWorldTileMap() - Run the tilemap functions (called from the "game start" function)
+//    createTileMap2D() - Makes the tilemap array
+//    createWallTileImage() - Makes an image for the walls in the tilemap array
+//    buildTilesIntoSprites() - Makes walls where they are supposed to be in the tilemap
+//    readTile() - Accesses the array and determines what tile is there
+//
+//
+// SECTION 3 - STUDENT HOOKS: HERO LOGIC & ANIMATION - NO LONGER HERE. THEY ARE GONE. They have been moved to a project that uses the Hero Engine extension.
 //   hero1Logic() – Student-editable logic for Hero 1's behavior each frame.
 //   hero2Logic() – Student-editable logic for Hero 2's behavior each frame.
 //   hero3Logic() – Student-editable logic for Hero 3's behavior each frame.
@@ -268,6 +278,9 @@ namespace HeroEngine {
         _started = true;
 
         ensureHeroSpriteKinds();
+
+        initWorldTileMap() 
+        
         scene.setBackgroundColor(1);
         tiles.setCurrentTilemap(tilemap`level1`)
         setupHeroes();
@@ -326,9 +339,25 @@ namespace userconfig {
 
 
 // --------------------------------------------------------------
+// INTERNAL TILEMAP SYSTEM (GLOBAL ENGINE SPACE)
+// Completely hidden from wrapper / HeroEngine namespace
+// --------------------------------------------------------------
+
+const WORLD_TILE_SIZE = 32          // private
+const TILE_EMPTY = 0                // private
+const TILE_WALL = 1                 // private
+
+// 2D array of numbers for engine-internal use only
+let _engineWorldTileMap: number[][] = []
+
+
+
+// --------------------------------------------------------------
 // Sprite kinds (lazy init for extension safety)
 // --------------------------------------------------------------
 let _heroKindsInitialized = false
+
+
 
 function ensureHeroSpriteKinds() {
     if (_heroKindsInitialized) return
@@ -342,7 +371,9 @@ function ensureHeroSpriteKinds() {
     if (!SpriteKind.EnemySpawner) SpriteKind.EnemySpawner = SpriteKind.create()
     if (!SpriteKind.SupportBeam) SpriteKind.SupportBeam = SpriteKind.create()
     if (!SpriteKind.SupportIcon) SpriteKind.SupportIcon = SpriteKind.create()
+    if (!SpriteKind.Wall) SpriteKind.Wall = SpriteKind.create()
 }
+
 
 
 // Phaser/ESM shim: ensure custom SpriteKinds exist before any overlaps are registered.
@@ -657,11 +688,20 @@ const AURA_COLOR_INTELLECT = 8
 const AURA_COLOR_HEAL = 7 // green-ish
 
 
+
+
+
+
+// ================================================================
+// ================================================================
 // ================================================================
 // SECTION 2 - HELPER FUNCTIONS
 // ================================================================
 // Utility helpers used across the engine. Stateless. No side effects.
-
+// ================================================================
+// ================================================================
+// ================================================================
+// ================================================================
 
 
 
@@ -734,6 +774,93 @@ function r3(v: number) { return Math.round(v * 1000) / 1000 }
 
 
 
+
+
+// ================================================================
+// ================================================================
+// ================================================================
+// SECTION 2.5 - TILEMAP AND WORLD GENERATION
+// ================================================================
+// Generates the tilemap 2D array and makes images for it
+// ================================================================
+
+function _createTileMap2D(): number[][] {
+    const tile = WORLD_TILE_SIZE
+
+    let cols = Math.idiv(scene.screenWidth(), tile)
+    let rows = Math.idiv(scene.screenHeight(), tile)
+
+    if (cols < 1) cols = 10
+    if (rows < 1) rows = 8
+
+    const arr: number[][] = []
+
+    for (let r = 0; r < rows; r++) {
+        const row: number[] = []
+        for (let c = 0; c < cols; c++) {
+            const isBorder = r === 0 || c === 0 || r === rows - 1 || c === cols - 1
+            row.push(isBorder ? TILE_WALL : TILE_EMPTY)
+        }
+        arr.push(row)
+    }
+
+    return arr
+}
+
+function _createWallTileImage(): Image {
+    const s = WORLD_TILE_SIZE
+    const img = image.create(s, s)
+
+    // Black base
+    img.fill(15)
+
+    // Gray speckles
+    for (let y = 0; y < s; y++) {
+        for (let x = 0; x < s; x++) {
+            if (randint(0, 7) === 0) img.setPixel(x, y, 13)
+        }
+    }
+
+    // Stripes
+    for (let x = 0; x < s; x += 4) {
+        for (let y = 0; y < s; y++) img.setPixel(x, y, 1)
+    }
+
+    return img
+}
+
+function _buildTilesIntoSprites(map: number[][]): void {
+    const tile = WORLD_TILE_SIZE
+    const wallImg = _createWallTileImage()
+
+    for (let r = 0; r < map.length; r++) {
+        const row = map[r]
+        for (let c = 0; c < row.length; c++) {
+            if (row[c] !== TILE_WALL) continue
+
+            const s = sprites.create(wallImg, SpriteKind.Wall)
+            s.left = c * tile
+            s.top = r * tile
+            s.z = 5
+        }
+    }
+}
+
+
+
+
+// This is called ONLY by HeroEngine.start()
+function initWorldTileMap(): void {
+    _engineWorldTileMap = _createTileMap2D()
+    _buildTilesIntoSprites(_engineWorldTileMap)
+}
+
+
+function _readTile(r: number, c: number): number {
+    if (r < 0 || r >= _engineWorldTileMap.length) return TILE_WALL
+    if (c < 0 || c >= _engineWorldTileMap[0].length) return TILE_WALL
+    return _engineWorldTileMap[r][c]
+}
 
 
 

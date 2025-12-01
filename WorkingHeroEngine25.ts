@@ -898,57 +898,150 @@ function _readTile(r: number, c: number): number {
 
 
 
-function resolveHeroTilemapCollisions(): void {
-    if (!_engineWorldTileMap || _engineWorldTileMap.length === 0) return
+
+// ==========================================================
+// TILEMAP COLLISION – HEROES + ENEMIES, WITH LOGGING
+// Soft slide along walls instead of teleporting
+// ==========================================================
+
+let _tileCollFrame = 0
+
+// Check if an axis-aligned box overlaps any TILE_WALL
+function _boxOverlapsWall(
+    centerX: number,
+    centerY: number,
+    halfW: number,
+    halfH: number
+): boolean {
+    if (!_engineWorldTileMap || _engineWorldTileMap.length === 0) return false
 
     const map = _engineWorldTileMap
     const rows = map.length
     const cols = map[0].length
     const tileSize = WORLD_TILE_SIZE
 
-    for (let hi = 0; hi < heroes.length; hi++) {
-        const h = heroes[hi]
-        if (!h) continue
+    const left = centerX - halfW
+    const right = centerX + halfW - 1
+    const top = centerY - halfH
+    const bottom = centerY + halfH - 1
 
-        const halfW = h.width >> 1
-        const halfH = h.height >> 1
+    const minCol = Math.idiv(left, tileSize)
+    const maxCol = Math.idiv(right, tileSize)
+    const minRow = Math.idiv(top, tileSize)
+    const maxRow = Math.idiv(bottom, tileSize)
 
-        const left = h.x - halfW
-        const right = h.x + halfW - 1
-        const top = h.y - halfH
-        const bottom = h.y + halfH - 1
-
-        const minCol = Math.idiv(left, tileSize)
-        const maxCol = Math.idiv(right, tileSize)
-        const minRow = Math.idiv(top, tileSize)
-        const maxRow = Math.idiv(bottom, tileSize)
-
-        let hitWall = false
-
-        for (let r = minRow; r <= maxRow; r++) {
-            if (r < 0 || r >= rows) continue
-            const rowArr = map[r]
-            for (let c = minCol; c <= maxCol; c++) {
-                if (c < 0 || c >= cols) continue
-                if (rowArr[c] === TILE_WALL) {
-                    hitWall = true
-                    break
-                }
+    for (let r = minRow; r <= maxRow; r++) {
+        if (r < 0 || r >= rows) continue
+        const rowArr = map[r]
+        for (let c = minCol; c <= maxCol; c++) {
+            if (c < 0 || c >= cols) continue
+            if (rowArr[c] === TILE_WALL) {
+                return true
             }
-            if (hitWall) break
+        }
+    }
+    return false
+}
+
+// Soft-slide resolver for a group (heroes or enemies)
+function _resolveTilemapCollisionsForGroup(group: Sprite[], label: string): void {
+    if (!_engineWorldTileMap || _engineWorldTileMap.length === 0) return
+
+    const tileSize = WORLD_TILE_SIZE
+    const map = _engineWorldTileMap
+    const rows = map.length
+    const cols = map[0].length
+
+    // Log occasionally so we can see what's happening
+    const doFrameLog = (_tileCollFrame % 30) === 0
+    if (doFrameLog) {
+        console.log(
+            "[tileColl] frame", _tileCollFrame,
+            "group", label,
+            "count", group.length,
+            "map", rows + "x" + cols,
+            "tileSize", tileSize
+        )
+    }
+
+    for (let i = 0; i < group.length; i++) {
+        const s = group[i]
+        if (!s) continue
+
+        const prevX = sprites.readDataNumber(s, HERO_DATA.PREV_X)
+        const prevY = sprites.readDataNumber(s, HERO_DATA.PREV_Y)
+        const cx = s.x
+        const cy = s.y
+
+        const halfW = s.width >> 1
+        const halfH = s.height >> 1
+
+        // If we don't have a prev snapshot, skip for this frame
+        if (!(prevX || prevX === 0) || !(prevY || prevY === 0)) continue
+
+        // ------------------------------------------
+        // Soft slide resolution:
+        // 1) test X movement (cx, prevY)
+        // 2) then test Y (finalX, cy)
+        // ------------------------------------------
+
+        let finalX = cx
+        let finalY = cy
+        let blockedX = false
+        let blockedY = false
+
+        // Test horizontal movement (X) first
+        if (_boxOverlapsWall(cx, prevY, halfW, halfH)) {
+            blockedX = true
+            finalX = prevX  // can't move into the wall; keep previous X
+        } else {
+            finalX = cx     // X is ok, Y will be resolved next
         }
 
-        if (hitWall) {
-            const prevX = sprites.readDataNumber(h, HERO_DATA.PREV_X)
-            const prevY = sprites.readDataNumber(h, HERO_DATA.PREV_Y)
-            if (prevX || prevX === 0) h.x = prevX
-            if (prevY || prevY === 0) h.y = prevY
-            h.vx = 0
-            h.vy = 0
+        // Test vertical movement (Y) with resolved X
+        if (_boxOverlapsWall(finalX, cy, halfW, halfH)) {
+            blockedY = true
+            finalY = prevY  // can't move into the wall; keep previous Y
+        } else {
+            finalY = cy
+        }
+
+        // Apply final position
+        s.x = finalX
+        s.y = finalY
+
+        // Zero out velocity on the blocked axes so they "slide"
+        if (blockedX) s.vx = 0
+        if (blockedY) s.vy = 0
+
+        if (blockedX || blockedY) {
+            console.log(
+                "[tileColl]", label, "#", i,
+                "blockedX", blockedX, "blockedY", blockedY,
+                "prev=(", prevX, ",", prevY, ")",
+                "curr=(", cx, ",", cy, ")",
+                "final=(", finalX, ",", finalY, ")"
+            )
+        } else if (doFrameLog && i === 0) {
+            // Occasional sample log even when no collision,
+            // so we know the system is actually running.
+            console.log(
+                "[tileColl]", label, "#", i,
+                "no collision",
+                "prev=(", prevX, ",", prevY, ")",
+                "curr=(", cx, ",", cy, ")"
+            )
         }
     }
 }
 
+// Main entry to call from onUpdate
+function resolveTilemapCollisions(): void {
+    _tileCollFrame++
+
+    _resolveTilemapCollisionsForGroup(heroes, "Hero")
+    _resolveTilemapCollisionsForGroup(enemies, "Enemy")
+}
 
 
 // ================================================================
@@ -4973,7 +5066,7 @@ game.onUpdate(function () {
     updateHeroAuras()                  // aura + combo meter
 
     // NEW: enforce collisions with logical wall tiles
-    resolveHeroTilemapCollisions()
+    resolveTilemapCollisions()
     
     for (let hi = 0; hi < heroes.length; hi++) { const h = heroes[hi]; if (h) debugAgilityDashProgress(h, hi) }
     updateEnemyHoming(now)             // AI + attacks

@@ -790,22 +790,52 @@ function _createTileMap2D(): number[][] {
     let cols = Math.idiv(scene.screenWidth(), tile)
     let rows = Math.idiv(scene.screenHeight(), tile)
 
-    if (cols < 1) cols = 10
-    if (rows < 1) rows = 8
+    // Make sure we have enough space for a box + gaps
+    if (cols < 5) cols = 5
+    if (rows < 5) rows = 5
 
-    const arr: number[][] = []
-
+    // Start all empty
+    const map: number[][] = []
     for (let r = 0; r < rows; r++) {
         const row: number[] = []
         for (let c = 0; c < cols; c++) {
-            const isBorder = r === 0 || c === 0 || r === rows - 1 || c === cols - 1
-            row.push(isBorder ? TILE_WALL : TILE_EMPTY)
+            row.push(TILE_EMPTY)
         }
-        arr.push(row)
+        map.push(row)
     }
 
-    return arr
+    // Inset the box by ~1/4 of the map size
+    const marginRows = Math.idiv(rows, 4)
+    const marginCols = Math.idiv(cols, 4)
+
+    const topR = marginRows
+    const bottomR = rows - 1 - marginRows
+    const leftC = marginCols
+    const rightC = cols - 1 - marginCols
+
+    // Center tile (for the gaps)
+    const centerR = Math.idiv(rows, 2)
+    const centerC = Math.idiv(cols, 2)
+
+    // Horizontal walls (top & bottom), leave gap at centerC
+    for (let c = leftC; c <= rightC; c++) {
+        if (c !== centerC) {
+            map[topR][c] = TILE_WALL
+            map[bottomR][c] = TILE_WALL
+        }
+    }
+
+    // Vertical walls (left & right), leave gap at centerR
+    for (let r = topR; r <= bottomR; r++) {
+        if (r !== centerR) {
+            map[r][leftC] = TILE_WALL
+            map[r][rightC] = TILE_WALL
+        }
+    }
+
+    return map
 }
+
 
 function _createWallTileImage(): Image {
     const s = WORLD_TILE_SIZE

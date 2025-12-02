@@ -241,8 +241,34 @@ namespace HeroEngine {
         timeMs: number,
         direction: string
     ): void {
-        // no-op default
+    
+        // Determine which hero this sprite actually is.
+        // All hero sprites have HERO_DATA.INDEX stored on them.
+        const heroIndex = sprites.readDataNumber(hero, HERO_DATA.INDEX);
+    
+        // Pick an appropriate default idle sprite.
+        let img: Image = null;
+    
+        if (heroIndex === 0) {
+            img = DEMO_HERO1_IDLE;
+        } else if (heroIndex === 1) {
+            img = DEMO_HERO2_IDLE;
+        } else if (heroIndex === 2) {
+            img = DEMO_HERO3_IDLE;
+        } else if (heroIndex === 3) {
+            img = DEMO_HERO4_IDLE;
+        } else {
+            // fallback if somehow out of range
+            img = DEMO_HERO1_IDLE;
+        }
+    
+        // Only set image when animKey is "Idle"
+        // or if no student animation function provided
+        if (animKey === "Idle" || !animKey) {
+            hero.setImage(img);
+        }
     }
+
 
     // Strongly typed hooks now
     export let hero1LogicHook: any = defaultHeroLogic;

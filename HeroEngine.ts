@@ -234,40 +234,102 @@ namespace HeroEngine {
         return [FAMILY.STRENGTH, 0, 0, 0, 0, ELEM.NONE, ANIM.ID.IDLE];
     }
 
+function defaultHeroAnim(
+    hero: Sprite,
+    animKey: string,
+    timeMs: number,
+    direction: string
+): void {
 
-    function defaultHeroAnim(
-        hero: Sprite,
-        animKey: string,
-        timeMs: number,
-        direction: string
-    ): void {
-    
-        // Determine which hero this sprite actually is.
-        // All hero sprites have HERO_DATA.INDEX stored on them.
-        const heroIndex = sprites.readDataNumber(hero, HERO_DATA.INDEX);
-    
-        // Pick an appropriate default idle sprite.
-        let img: Image = null;
-    
-        if (heroIndex === 0) {
-            img = DEMO_HERO1_IDLE;
-        } else if (heroIndex === 1) {
-            img = DEMO_HERO2_IDLE;
-        } else if (heroIndex === 2) {
-            img = DEMO_HERO3_IDLE;
-        } else if (heroIndex === 3) {
-            img = DEMO_HERO4_IDLE;
-        } else {
-            // fallback if somehow out of range
-            img = DEMO_HERO1_IDLE;
-        }
-    
-        // Only set image when animKey is "Idle"
-        // or if no student animation function provided
-        if (animKey === "Idle" || !animKey) {
-            hero.setImage(img);
-        }
-    }
+    // OWNER, not index, determines which hero it is
+    const owner = sprites.readDataNumber(hero, HERO_DATA.OWNER);
+
+    // Hardcoded idle sprites for each hero
+    // These NEVER appear in student project, so Blocks stays clean.
+
+    const idle1 = img`
+        . . . . . . f f f f . . . . . . 
+        . . . . f f f 2 2 f f f . . . . 
+        . . . f f f 2 2 2 2 f f f . . . 
+        . . f f f e e e e e e f f f . . 
+        . . f f e 2 2 2 2 2 2 e e f . . 
+        . . f e 2 f f f f f f 2 e f . . 
+        . . f f f f e e e e f f f f . . 
+        . f f e f b f 4 4 f b f e f f . 
+        . f e e 4 1 f d d f 1 4 e e f . 
+        . . f e e d d d d d d e e f . . 
+        . . . f e e 4 4 4 4 e e f . . . 
+        . . e 4 f 2 2 2 2 2 2 f 4 e . . 
+        . . 4 d f 2 2 2 2 2 2 f d 4 . . 
+        . . 4 4 f 4 4 5 5 4 4 f 4 4 . . 
+        . . . . . f f f f f f . . . . . 
+        . . . . . f f . . f f . . . . . 
+    `;
+
+    const idle2 = img`
+        . . . . . . f f f f . . . . . . 
+        . . . . f f f 4 4 f f f . . . . 
+        . . . f f f 4 4 4 4 f f f . . . 
+        . . f f f e e e e e e f f f . . 
+        . . f f e 4 4 4 4 4 4 e e f . . 
+        . . f e 4 f f f f f f 4 e f . . 
+        . . f f f f e e e e f f f f . . 
+        . f f e f b f 6 6 f b f e f f . 
+        . f e e 4 6 f d d f 6 4 e e f . 
+        . . f e e d d d d d d e e f . . 
+        . . . f e e 4 4 4 4 e e f . . . 
+        . . e 4 f 4 4 4 4 4 4 f 4 e . . 
+        . . 4 d f 4 4 4 4 4 4 f d 4 . . 
+        . . 4 4 f 2 2 2 2 2 2 f 4 4 . . 
+        . . . . . f f f f f f . . . . . 
+        . . . . . f f . . f f . . . . . 
+    `;
+
+    const idle3 = img`
+        . . . . . . f f f f . . . . . . 
+        . . . . f f f 6 6 f f f . . . . 
+        . . . f f f 6 6 6 6 f f f . . . 
+        . . f f f e e e e e e f f f . . 
+        . . f f e 6 6 6 6 6 6 e e f . . 
+        . . f e 6 f f f f f f 6 e f . . 
+        . . f f f f e e e e f f f f . . 
+        . f f e f b f 8 8 f b f e f f . 
+        . f e e 4 8 f d d f 8 4 e e f . 
+        . . f e e d d d d d d e e f . . 
+        . . . f e e 4 4 4 4 e e f . . . 
+        . . e 4 f 6 6 6 6 6 6 f 4 e . . 
+        . . 4 d f 6 6 6 6 6 6 f d 4 . . 
+        . . 4 4 f 4 4 9 9 4 4 f 4 4 . . 
+        . . . . . f f f f f f . . . . . 
+        . . . . . f f . . f f . . . . . 
+    `;
+
+    const idle4 = img`
+        . . . . . . f f f f . . . . . . 
+        . . . . f f f 8 8 f f f . . . . 
+        . . . f f f 8 8 8 8 f f f . . . 
+        . . f f f e e e e e e f f f . . 
+        . . f f e 8 8 8 8 8 8 e e f . . 
+        . . f e 8 f f f f f f 8 e f . . 
+        . . f f f f e e e e f f f f . . 
+        . f f e f b f 1 1 f b f e f f . 
+        . f e e 4 1 f d d f 1 4 e e f . 
+        . . f e e d d d d d d e e f . . 
+        . . . f e e 4 4 4 4 e e f . . . 
+        . . e 4 f 8 8 8 8 8 8 f 4 e . . 
+        . . 4 d f 8 8 8 8 8 8 f d 4 . . 
+        . . 4 4 f 4 4 9 9 4 4 f 4 4 . . 
+        . . . . . f f f f f f . . . . . 
+        . . . . . f f . . f f . . . . . 
+    `;
+
+    if (owner === 1) hero.setImage(idle1);
+    else if (owner === 2) hero.setImage(idle2);
+    else if (owner === 3) hero.setImage(idle3);
+    else if (owner === 4) hero.setImage(idle4);
+    else hero.setImage(idle1);
+}
+
 
 
     // Strongly typed hooks now

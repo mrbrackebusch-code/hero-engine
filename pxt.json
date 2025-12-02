@@ -10,7 +10,7 @@
     },
     "files": [
         "README.md",
-        "WorkingHeroEngine25.ts",
+        "HeroEngine.ts",
         "assets.json"
     ],
     "testFiles": [

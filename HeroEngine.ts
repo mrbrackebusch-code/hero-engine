@@ -2013,7 +2013,7 @@ function regenHeroManaAll(percentOfMax: number) {
         const maxM = sprites.readDataNumber(hero, HERO_DATA.MAX_MANA); if (maxM <= 0) continue
         let mana = sprites.readDataNumber(hero, HERO_DATA.MANA)
         let gain = Math.idiv(maxM * percentOfMax, 100)
-        if (gain < 1 && mana < maxM) gain = 1
+        if (gain < 1 && mana < maxM) gain = 5 //1 percent normally, 5 for letting students test
         mana = Math.min(maxM, mana + gain)
         sprites.setDataNumber(hero, HERO_DATA.MANA, mana)
         updateHeroManaBar(i)

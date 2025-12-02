@@ -1236,7 +1236,9 @@ function runHeroLogicForHero(heroIndex: number, button: string) {
         ];
     }
 
-    let out: number[];
+    //let out: number[];
+    let out: any[];
+    
     try {
         out = fn(button, heroIndex, localEnemies, localHeroes);
     } catch (e) {
@@ -1269,8 +1271,34 @@ HeroEngine.runHeroLogicForHeroHook = runHeroLogicForHero;
 
 
 
+    // Positional unpack (allow strings or numbers from Blocks)
+    // 0: family, 1–4: trait pools, 5: element, 6: anim
+    function coerceFamily(val: any): number {
+        if (typeof val === "string") {
+            const s = val.toLowerCase()
+            if (s === "strength") return FAMILY.STRENGTH
+            if (s === "agility") return FAMILY.AGILITY
+            if (s === "intelligence" || s === "intellect") return FAMILY.INTELLECT
+            if (s === "support" || s === "heal") return FAMILY.HEAL
+        }
+        return (val | 0)
+    }
 
-
+    function coerceElement(val: any): number {
+        if (typeof val === "string") {
+            const s = val.toLowerCase()
+            if (s === "none") return ELEM.NONE
+            if (s === "grass" || s === "plant" || s === "plants") return ELEM.GRASS
+            if (s === "fire") return ELEM.FIRE
+            if (s === "water") return ELEM.WATER
+            if (s === "electric" || s === "lightning") return ELEM.ELECTRIC
+            // Earth support — you’ll add ELEM.EARTH yourself
+            if (s === "earth" && (ELEM as any).EARTH !== undefined) {
+                return (ELEM as any).EARTH
+            }
+        }
+        return (val | 0)
+    }
 
 
 function calculateMoveStatsForFamily(family: number, button: string, traits: number[]) {
@@ -1328,7 +1356,8 @@ function doHeroMoveForPlayer(playerId: number, button: string) {
         );
     }
 
-    let out: number[];
+    //let out: number[];
+    let out: any[]; //So we can get strings for the names from students
     try {
         out = hook(heroIndex, button);
     } catch (e) {
@@ -1359,14 +1388,24 @@ function doHeroMoveForPlayer(playerId: number, button: string) {
         return;
     }
 
+
+    const family = coerceFamily(out[0])      // FAMILY
+    const t1 = out[1] | 0                    // TRAIT1
+    const t2 = out[2] | 0                    // TRAIT2
+    const t3 = out[3] | 0                    // TRAIT3
+    const t4 = out[4] | 0                    // TRAIT4
+    const element = coerceElement(out[5])    // ELEMENT
+
+
+        
     // Positional unpack (avoid OUT.* at runtime in Arcade)
-    const family = out[0] | 0;  // FAMILY
-    const t1 = out[1] | 0;      // TRAIT1
-    const t2 = out[2] | 0;      // TRAIT2
-    const t3 = out[3] | 0;      // TRAIT3
-    const t4 = out[4] | 0;      // TRAIT4
-    const element = out[5] | 0; // ELEMENT
-    const animId = out[6] | 0;  // ANIM_ID
+//    const family = out[0] | 0;  // FAMILY
+//    const t1 = out[1] | 0;      // TRAIT1
+//    const t2 = out[2] | 0;      // TRAIT2
+//    const t3 = out[3] | 0;      // TRAIT3
+//    const t4 = out[4] | 0;      // TRAIT4
+//    const element = out[5] | 0; // ELEMENT
+//    const animId = out[6] | 0;  // ANIM_ID
 
 
 
@@ -1384,8 +1423,20 @@ function doHeroMoveForPlayer(playerId: number, button: string) {
     sprites.setDataNumber(hero, HERO_DATA.TRAIT3, t3)
     sprites.setDataNumber(hero, HERO_DATA.TRAIT4, t4)
 
-    const animKey = animIdToKey(animId)
+    //const animKey = animIdToKey(animId)
+    // Animation ID: allow either a free-form string from Blocks or a numeric ID
+    let animKey: string
+    const rawAnim = out[6]
+    if (typeof rawAnim === "string") {
+        // Students can return any animation key they like, e.g. "idle", "FireSlash", "MyWeirdAnim"
+        animKey = rawAnim
+    } else {
+        const animId = (rawAnim | 0)
+        animKey = animIdToKey(animId)
+    }
 
+
+    
     // Trait-driven move stats (per family)
     const stats = calculateMoveStatsForFamily(family, button, traits)
 

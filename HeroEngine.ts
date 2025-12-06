@@ -1,4 +1,5 @@
 
+
 // --------------------------------------------------------------
 // Sprite kinds - type declarations for TS (no top-level create()) DON'T COPY THIS OVER TO PHASER! It is already there
 // --------------------------------------------------------------
@@ -422,7 +423,7 @@ function defaultHeroAnim(
         initWorldTileMap() 
         
         scene.setBackgroundColor(1);
-        //tiles.setCurrentTilemap(tilemap`level1`)
+        tiles.setCurrentTilemap(tilemap`level1`)
         setupHeroes();
         setupTestEnemies();
         setupEnemySpawners();
@@ -621,8 +622,6 @@ const AGI_MIN_VISUAL_LEN = 3
 // List of visual monster variants to cycle through on spawn.
 // You can (and should) extend this to all ~40 you care about.
 // These names should match whatever your Phaser wrapper expects.
-
-
 const MONSTER_VISUAL_SEQUENCE = [
     "bat",
     "bee",
@@ -3146,7 +3145,7 @@ function spawnAgilityThrustProjectile(
         sprites.setDataNumber(hero, "DBG_SEQ", seq)
         sprites.setDataNumber(proj, "dbgId", seq)
         sprites.setDataNumber(proj, "dbgLast", 0)
-        //function r3(v: number) { return Math.round(v * 1000) / 1000 }
+        function r3(v: number) { return Math.round(v * 1000) / 1000 }
         console.log(
             `[AGI ${seq}] SPAWN hero=${heroIndex} L_exec=${L} dir=(${r3(nx)},${r3(ny)}) @(${hero.x | 0},${hero.y | 0})`
         )
@@ -3309,12 +3308,12 @@ function updateAgilityProjectilesMotionFor(
     const fMin = sBack
     const fMax = sFront + 2 // include nose
 
-//    function cornerX(f: number, wside: number) {
- //       return nx * f + sx * wside
-//    }
- //   function cornerY(f: number, wside: number) {
-  //      return ny * f + sy * wside
- //   }
+    function cornerX(f: number, wside: number) {
+        return nx * f + sx * wside
+    }
+    function cornerY(f: number, wside: number) {
+        return ny * f + sy * wside
+    }
 
     const xs = [
         cornerX(fMin, -sideHalf),

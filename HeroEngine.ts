@@ -621,6 +621,8 @@ const AGI_MIN_VISUAL_LEN = 3
 // List of visual monster variants to cycle through on spawn.
 // You can (and should) extend this to all ~40 you care about.
 // These names should match whatever your Phaser wrapper expects.
+
+
 const MONSTER_VISUAL_SEQUENCE = [
     "bat",
     "bee",
@@ -5790,7 +5792,7 @@ game.onUpdateInterval(ENEMY_SPAWN_INTERVAL_MS, function () {
     spawnEnemyOfKind(kind, s.x, s.y)
 })
 
-
+}
 
 
 

@@ -1,5 +1,4 @@
 
-
 // --------------------------------------------------------------
 // Sprite kinds - type declarations for TS (no top-level create()) DON'T COPY THIS OVER TO PHASER! It is already there
 // --------------------------------------------------------------
@@ -207,59 +206,7 @@ namespace SpriteKind {
 
 
 
-const HERO_DATA = {
-    HP: "hp", MAX_HP: "maxHp", MANA: "mana", MAX_MANA: "maxMana",
-    FAMILY: "family", BUTTON: "btn",
-    TRAIT1: "t1", TRAIT2: "t2", TRAIT3: "t3", TRAIT4: "t4",
-    INPUT_LOCKED: "inputLocked", STORED_VX: "sVx", STORED_VY: "sVy",
-    TARGET_START_MS: "tStart", TARGET_LOCK_MS: "tLock",
-    IS_CONTROLLING_SPELL: "isCtrlSpell",
-    COMBO_COUNT: "comboCount", COMBO_MULT: "comboMult",
-    LAST_HIT_TIME: "lastHit", LAST_MOVE_KEY: "lastMoveKey",
-    IFRAME_UNTIL: "iUntil",
-    AGI_DASH_UNTIL: "aDashUntil",      // when AGI dash ends (ms)
-    AGI_COMBO_UNTIL: "aComboUntil",    // when AGI combo window ends (ms)
-    STR_INNER_RADIUS: "strInnerR",     // STR smash inner radius (per-hero cache)
-    OWNER: "owner",                    // which player "owns" this hero
-
-    // NEW: engine-side state we want exposed
-    BUSY_UNTIL: "busyUntil",           // heroBusyUntil[heroIndex]
-    MOVE_SPEED_MULT: "mvMult",         // heroMoveSpeedMult[heroIndex]
-    DAMAGE_AMP_MULT: "dmgMult",        // heroDamageAmpMult[heroIndex]
-    BUFF_JSON: "buffsJson",             // JSON snapshot of heroBuffs[heroIndex]
-
-    // NEW: for tile-collision rollback
-    PREV_X: "prevX",
-    PREV_Y: "prevY"
-}
-
-
-const ENEMY_DATA = {
-    HP: "hp",
-    MAX_HP: "maxHp",
-
-    SPEED: "spd",                 // base movement speed for homing AI
-    TOUCH_DAMAGE: "touchDmg",     // contact damage vs heroes
-    REGEN_PCT: "regenPct",        // % regen per tick (if used later)
-
-    SLOW_PCT: "slowPct",
-    SLOW_UNTIL: "slowUntil",
-    WEAKEN_PCT: "weakPct",
-    WEAKEN_UNTIL: "weakUntil",
-    KNOCKBACK_UNTIL: "kbUntil",
-
-    ATK_PHASE: "atkPhase",        // current attack state (enum/int)
-    ATK_UNTIL: "atkUntil",        // time current attack phase ends
-    ATK_COOLDOWN_UNTIL: "atkCd",  // when enemy can attack again
-
-    NAME: "name",                 // string: logical name / kind (e.g. "GRUNT")
-    FAMILY: "family"              // string: higher-level family (e.g. "slime")
-}
-
-
-
 namespace HeroEngine {
-
 
     // Block-safe function type for student logic
     export type HeroLogicFn = (
@@ -600,7 +547,6 @@ const AGI_LANDING_BUFFER_MS = 80
 const HERO_DAMAGE_FLASH_MS = 150
 const AGI_MIN_VISUAL_LEN = 3
 
-
 // --------------------------------------------------------------
 // HERO_DATA – sprite data schema for hero sprites
 // Ownership:
@@ -610,6 +556,32 @@ const AGI_MIN_VISUAL_LEN = 3
 //                 combo handling, AGI/STR/INT modules, auras
 // --------------------------------------------------------------
 
+const HERO_DATA = {
+    HP: "hp", MAX_HP: "maxHp", MANA: "mana", MAX_MANA: "maxMana",
+    FAMILY: "family", BUTTON: "btn",
+    TRAIT1: "t1", TRAIT2: "t2", TRAIT3: "t3", TRAIT4: "t4",
+    INPUT_LOCKED: "inputLocked", STORED_VX: "sVx", STORED_VY: "sVy",
+    TARGET_START_MS: "tStart", TARGET_LOCK_MS: "tLock",
+    IS_CONTROLLING_SPELL: "isCtrlSpell",
+    COMBO_COUNT: "comboCount", COMBO_MULT: "comboMult",
+    LAST_HIT_TIME: "lastHit", LAST_MOVE_KEY: "lastMoveKey",
+    IFRAME_UNTIL: "iUntil",
+    AGI_DASH_UNTIL: "aDashUntil",      // when AGI dash ends (ms)
+    AGI_COMBO_UNTIL: "aComboUntil",    // when AGI combo window ends (ms)
+    STR_INNER_RADIUS: "strInnerR",     // STR smash inner radius (per-hero cache)
+    OWNER: "owner",                    // which player "owns" this hero
+
+    // NEW: engine-side state we want exposed
+    BUSY_UNTIL: "busyUntil",           // heroBusyUntil[heroIndex]
+    MOVE_SPEED_MULT: "mvMult",         // heroMoveSpeedMult[heroIndex]
+    DAMAGE_AMP_MULT: "dmgMult",        // heroDamageAmpMult[heroIndex]
+    BUFF_JSON: "buffsJson",             // JSON snapshot of heroBuffs[heroIndex]
+
+    // NEW: for tile-collision rollback
+    PREV_X: "prevX",
+    PREV_Y: "prevY"
+}
+
 
 // --------------------------------------------------------------
 // ENEMY_DATA – sprite data schema for enemies
@@ -618,77 +590,24 @@ const AGI_MIN_VISUAL_LEN = 3
 //   • Read by:    updateEnemyHoming(), updateEnemyEffects(),
 //                 applyDamageToEnemyIndex(), wave logic
 // --------------------------------------------------------------
+const ENEMY_DATA = {
+    HP: "hp",
+    MAX_HP: "maxHp",
 
-// List of visual monster variants to cycle through on spawn.
-// You can (and should) extend this to all ~40 you care about.
-// These names should match whatever your Phaser wrapper expects.
-const MONSTER_VISUAL_SEQUENCE = [
-    "bat",
-    "bee",
-    "beetle",
-    "big worm",
-    "eyeball",
-    "ghost",
-    "goblin",
-    "golem",
-    "golem white",
-    "googon",
-    "imp blue",
-    "imp green",
-    "imp red",
-    "man eater flower",
-    "minotaur red",
-    "pumpking",
-    "slime",
-    "slime black",
-    "slime blue",
-    "slime brown",
-    "slime green",
-    "slime lightblue",
-    "slime red",
-    "slime violet",
-    "slime yellow",
-    "small worm",
-    "snake",
-    "wolf light brown"
-]
+    SPEED: "spd",                 // base movement speed for homing AI
+    TOUCH_DAMAGE: "touchDmg",     // contact damage vs heroes
+    REGEN_PCT: "regenPct",        // % regen per tick (if used later)
 
-// Index for cycling
-let monsterVisualIndex = 0
+    SLOW_PCT: "slowPct",
+    SLOW_UNTIL: "slowUntil",
+    WEAKEN_PCT: "weakPct",
+    WEAKEN_UNTIL: "weakUntil",
+    KNOCKBACK_UNTIL: "kbUntil",
 
-function nextMonsterVisualName(): string {
-    if (MONSTER_VISUAL_SEQUENCE.length === 0) return "slime"
-    const name = MONSTER_VISUAL_SEQUENCE[monsterVisualIndex]
-    monsterVisualIndex = (monsterVisualIndex + 1) % MONSTER_VISUAL_SEQUENCE.length
-    return name
+    ATK_PHASE: "atkPhase",        // current attack state (enum/int)
+    ATK_UNTIL: "atkUntil",        // time current attack phase ends
+    ATK_COOLDOWN_UNTIL: "atkCd"   // when enemy can attack again
 }
-
-function familyFromVisualName(name: string): string {
-    const lower = name.toLowerCase()
-
-    if (lower.indexOf("slime") >= 0) return "slime"
-    if (lower.indexOf("spider") >= 0) return "spider"
-    if (lower.indexOf("worm") >= 0) return "worm"          // big / small worm
-    if (lower.indexOf("imp") >= 0) return "imp"
-    if (lower.indexOf("golem white") >= 0) return "golem_white"
-    if (lower.indexOf("golem") >= 0) return "golem"
-    if (lower.indexOf("bat") >= 0) return "bat"
-    if (lower.indexOf("bee") >= 0) return "bee"
-    if (lower.indexOf("beetle") >= 0) return "beetle"
-    if (lower.indexOf("eyeball") >= 0) return "eyeball"
-    if (lower.indexOf("ghost") >= 0) return "ghost"
-    if (lower.indexOf("goblin") >= 0) return "goblin"
-    if (lower.indexOf("googon") >= 0) return "googon"
-    if (lower.indexOf("minotaur") >= 0) return "minotaur"
-    if (lower.indexOf("pumpking") >= 0) return "pumpking"
-    if (lower.indexOf("wolf") >= 0) return "wolf"
-
-    // Fallback: use the whole name as its own family
-    return name
-}
-
-
-
 
 // --------------------------------------------------------------
 // PROJ_DATA – sprite data schema for hero projectiles
@@ -4944,36 +4863,25 @@ function enemyImageForKind(kind: string): Image {
     return imgBase
 }
 
-    function spawnEnemyOfKind(kind: string, x: number, y: number) {
-        const spec = (ENEMY_KIND as any)[kind] || ENEMY_KIND.GRUNT
-        const enemy = sprites.create(enemyImageForKind(kind), SpriteKind.Enemy)
-        enemy.x = x
-        enemy.y = y
-        enemy.z = 10
+function spawnEnemyOfKind(kind: string, x: number, y: number) {
+    const spec = (ENEMY_KIND as any)[kind] || ENEMY_KIND.GRUNT
+    const enemy = sprites.create(enemyImageForKind(kind), SpriteKind.Enemy)
+    enemy.x = x; enemy.y = y; enemy.z = 10
+    const eIndex = enemies.length; enemies.push(enemy)
+    initEnemyHP(eIndex, enemy, spec.maxHP)
+    sprites.setDataNumber(enemy, ENEMY_DATA.SPEED, spec.speed)
+    sprites.setDataNumber(enemy, ENEMY_DATA.TOUCH_DAMAGE, spec.touchDamage)
+    sprites.setDataNumber(enemy, ENEMY_DATA.REGEN_PCT, 0)
+    sprites.setDataNumber(enemy, ENEMY_DATA.SLOW_PCT, 0)
+    sprites.setDataNumber(enemy, ENEMY_DATA.SLOW_UNTIL, 0)
+    sprites.setDataNumber(enemy, ENEMY_DATA.WEAKEN_PCT, 0)
+    sprites.setDataNumber(enemy, ENEMY_DATA.WEAKEN_UNTIL, 0)
+    sprites.setDataNumber(enemy, ENEMY_DATA.KNOCKBACK_UNTIL, 0)
+    sprites.setDataNumber(enemy, ENEMY_DATA.ATK_PHASE, 0)
+    sprites.setDataNumber(enemy, ENEMY_DATA.ATK_UNTIL, 0)
+    sprites.setDataNumber(enemy, ENEMY_DATA.ATK_COOLDOWN_UNTIL, 0)
+}
 
-        // NEW: get the next visual name in the cycle & derive family
-        const visualName = nextMonsterVisualName()
-        const family = familyFromVisualName(visualName)
-
-        sprites.setDataString(enemy, ENEMY_DATA.NAME, visualName)
-        sprites.setDataString(enemy, ENEMY_DATA.FAMILY, family)
-
-        const eIndex = enemies.length
-        enemies.push(enemy)
-
-        initEnemyHP(eIndex, enemy, spec.maxHP)
-        sprites.setDataNumber(enemy, ENEMY_DATA.SPEED, spec.speed)
-        sprites.setDataNumber(enemy, ENEMY_DATA.TOUCH_DAMAGE, spec.touchDamage)
-        sprites.setDataNumber(enemy, ENEMY_DATA.REGEN_PCT, 0)
-        sprites.setDataNumber(enemy, ENEMY_DATA.SLOW_PCT, 0)
-        sprites.setDataNumber(enemy, ENEMY_DATA.SLOW_UNTIL, 0)
-        sprites.setDataNumber(enemy, ENEMY_DATA.WEAKEN_PCT, 0)
-        sprites.setDataNumber(enemy, ENEMY_DATA.WEAKEN_UNTIL, 0)
-        sprites.setDataNumber(enemy, ENEMY_DATA.KNOCKBACK_UNTIL, 0)
-        sprites.setDataNumber(enemy, ENEMY_DATA.ATK_PHASE, 0)
-        sprites.setDataNumber(enemy, ENEMY_DATA.ATK_UNTIL, 0)
-        sprites.setDataNumber(enemy, ENEMY_DATA.ATK_COOLDOWN_UNTIL, 0)
-    }
 
 // Corner spawners
 let enemySpawners: Sprite[] = []

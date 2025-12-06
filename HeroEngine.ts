@@ -422,7 +422,7 @@ function defaultHeroAnim(
         initWorldTileMap() 
         
         scene.setBackgroundColor(1);
-        tiles.setCurrentTilemap(tilemap`level1`)
+        //tiles.setCurrentTilemap(tilemap`level1`)
         setupHeroes();
         setupTestEnemies();
         setupEnemySpawners();

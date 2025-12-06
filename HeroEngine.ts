@@ -206,9 +206,6 @@ namespace SpriteKind {
 
 
 
-namespace HeroEngine {
-
-    
 const HERO_DATA = {
     HP: "hp", MAX_HP: "maxHp", MANA: "mana", MAX_MANA: "maxMana",
     FAMILY: "family", BUTTON: "btn",
@@ -258,8 +255,11 @@ const ENEMY_DATA = {
     FAMILY: "family"              // string: higher-level family (e.g. "slime")
 }
 
-    
-    
+
+
+namespace HeroEngine {
+
+
     // Block-safe function type for student logic
     export type HeroLogicFn = (
         button: string,
@@ -662,12 +662,29 @@ function nextMonsterVisualName(): string {
     return name
 }
 
-// Derive a "family" tag from the visual name (for swapping skins in the same family).
 function familyFromVisualName(name: string): string {
     const lower = name.toLowerCase()
+
     if (lower.indexOf("slime") >= 0) return "slime"
     if (lower.indexOf("spider") >= 0) return "spider"
-    if (lower.indexOf("worm") >= 0) return "worm"
+    if (lower.indexOf("worm") >= 0) return "worm"          // big / small worm
+    if (lower.indexOf("imp") >= 0) return "imp"
+    if (lower.indexOf("golem white") >= 0) return "golem_white"
+    if (lower.indexOf("golem") >= 0) return "golem"
+    if (lower.indexOf("bat") >= 0) return "bat"
+    if (lower.indexOf("bee") >= 0) return "bee"
+    if (lower.indexOf("beetle") >= 0) return "beetle"
+    if (lower.indexOf("eyeball") >= 0) return "eyeball"
+    if (lower.indexOf("ghost") >= 0) return "ghost"
+    if (lower.indexOf("goblin") >= 0) return "goblin"
+    if (lower.indexOf("googon") >= 0) return "googon"
+    if (lower.indexOf("minotaur") >= 0) return "minotaur"
+    if (lower.indexOf("pumpking") >= 0) return "pumpking"
+    if (lower.indexOf("wolf") >= 0) return "wolf"
+
+    // Fallback: use the whole name as its own family
+    return name
+}
 
 
 

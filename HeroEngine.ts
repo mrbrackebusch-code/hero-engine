@@ -3146,7 +3146,7 @@ function spawnAgilityThrustProjectile(
         sprites.setDataNumber(hero, "DBG_SEQ", seq)
         sprites.setDataNumber(proj, "dbgId", seq)
         sprites.setDataNumber(proj, "dbgLast", 0)
-        function r3(v: number) { return Math.round(v * 1000) / 1000 }
+        //function r3(v: number) { return Math.round(v * 1000) / 1000 }
         console.log(
             `[AGI ${seq}] SPAWN hero=${heroIndex} L_exec=${L} dir=(${r3(nx)},${r3(ny)}) @(${hero.x | 0},${hero.y | 0})`
         )

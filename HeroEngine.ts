@@ -606,8 +606,66 @@ const ENEMY_DATA = {
 
     ATK_PHASE: "atkPhase",        // current attack state (enum/int)
     ATK_UNTIL: "atkUntil",        // time current attack phase ends
-    ATK_COOLDOWN_UNTIL: "atkCd"   // when enemy can attack again
+    ATK_COOLDOWN_UNTIL: "atkCd",  // when enemy can attack again
+
+    NAME: "name",                 // string: logical name / kind (e.g. "GRUNT")
+    FAMILY: "family"              // string: higher-level family (e.g. "slime")
 }
+
+
+// List of visual monster variants to cycle through on spawn.
+// You can (and should) extend this to all ~40 you care about.
+// These names should match whatever your Phaser wrapper expects.
+const MONSTER_VISUAL_SEQUENCE = [
+    "bat",
+    "bee",
+    "beetle",
+    "big worm",
+    "eyeball",
+    "ghost",
+    "goblin",
+    "golem",
+    "golem white",
+    "googon",
+    "imp blue",
+    "imp green",
+    "imp red",
+    "man eater flower",
+    "minotaur red",
+    "pumpking",
+    "slime",
+    "slime black",
+    "slime blue",
+    "slime brown",
+    "slime green",
+    "slime lightblue",
+    "slime red",
+    "slime violet",
+    "slime yellow",
+    "small worm",
+    "snake",
+    "wolf light brown"
+]
+
+// Index for cycling
+let monsterVisualIndex = 0
+
+function nextMonsterVisualName(): string {
+    if (MONSTER_VISUAL_SEQUENCE.length === 0) return "slime"
+    const name = MONSTER_VISUAL_SEQUENCE[monsterVisualIndex]
+    monsterVisualIndex = (monsterVisualIndex + 1) % MONSTER_VISUAL_SEQUENCE.length
+    return name
+}
+
+// Derive a "family" tag from the visual name (for swapping skins in the same family).
+function familyFromVisualName(name: string): string {
+    const lower = name.toLowerCase()
+    if (lower.indexOf("slime") >= 0) return "slime"
+    if (lower.indexOf("spider") >= 0) return "spider"
+    if (lower.indexOf("worm") >= 0) return "worm"
+
+
+
 
 // --------------------------------------------------------------
 // PROJ_DATA – sprite data schema for hero projectiles
@@ -4863,25 +4921,36 @@ function enemyImageForKind(kind: string): Image {
     return imgBase
 }
 
-function spawnEnemyOfKind(kind: string, x: number, y: number) {
-    const spec = (ENEMY_KIND as any)[kind] || ENEMY_KIND.GRUNT
-    const enemy = sprites.create(enemyImageForKind(kind), SpriteKind.Enemy)
-    enemy.x = x; enemy.y = y; enemy.z = 10
-    const eIndex = enemies.length; enemies.push(enemy)
-    initEnemyHP(eIndex, enemy, spec.maxHP)
-    sprites.setDataNumber(enemy, ENEMY_DATA.SPEED, spec.speed)
-    sprites.setDataNumber(enemy, ENEMY_DATA.TOUCH_DAMAGE, spec.touchDamage)
-    sprites.setDataNumber(enemy, ENEMY_DATA.REGEN_PCT, 0)
-    sprites.setDataNumber(enemy, ENEMY_DATA.SLOW_PCT, 0)
-    sprites.setDataNumber(enemy, ENEMY_DATA.SLOW_UNTIL, 0)
-    sprites.setDataNumber(enemy, ENEMY_DATA.WEAKEN_PCT, 0)
-    sprites.setDataNumber(enemy, ENEMY_DATA.WEAKEN_UNTIL, 0)
-    sprites.setDataNumber(enemy, ENEMY_DATA.KNOCKBACK_UNTIL, 0)
-    sprites.setDataNumber(enemy, ENEMY_DATA.ATK_PHASE, 0)
-    sprites.setDataNumber(enemy, ENEMY_DATA.ATK_UNTIL, 0)
-    sprites.setDataNumber(enemy, ENEMY_DATA.ATK_COOLDOWN_UNTIL, 0)
-}
+    function spawnEnemyOfKind(kind: string, x: number, y: number) {
+        const spec = (ENEMY_KIND as any)[kind] || ENEMY_KIND.GRUNT
+        const enemy = sprites.create(enemyImageForKind(kind), SpriteKind.Enemy)
+        enemy.x = x
+        enemy.y = y
+        enemy.z = 10
 
+        // NEW: get the next visual name in the cycle & derive family
+        const visualName = nextMonsterVisualName()
+        const family = familyFromVisualName(visualName)
+
+        sprites.setDataString(enemy, ENEMY_DATA.NAME, visualName)
+        sprites.setDataString(enemy, ENEMY_DATA.FAMILY, family)
+
+        const eIndex = enemies.length
+        enemies.push(enemy)
+
+        initEnemyHP(eIndex, enemy, spec.maxHP)
+        sprites.setDataNumber(enemy, ENEMY_DATA.SPEED, spec.speed)
+        sprites.setDataNumber(enemy, ENEMY_DATA.TOUCH_DAMAGE, spec.touchDamage)
+        sprites.setDataNumber(enemy, ENEMY_DATA.REGEN_PCT, 0)
+        sprites.setDataNumber(enemy, ENEMY_DATA.SLOW_PCT, 0)
+        sprites.setDataNumber(enemy, ENEMY_DATA.SLOW_UNTIL, 0)
+        sprites.setDataNumber(enemy, ENEMY_DATA.WEAKEN_PCT, 0)
+        sprites.setDataNumber(enemy, ENEMY_DATA.WEAKEN_UNTIL, 0)
+        sprites.setDataNumber(enemy, ENEMY_DATA.KNOCKBACK_UNTIL, 0)
+        sprites.setDataNumber(enemy, ENEMY_DATA.ATK_PHASE, 0)
+        sprites.setDataNumber(enemy, ENEMY_DATA.ATK_UNTIL, 0)
+        sprites.setDataNumber(enemy, ENEMY_DATA.ATK_COOLDOWN_UNTIL, 0)
+    }
 
 // Corner spawners
 let enemySpawners: Sprite[] = []
@@ -5700,6 +5769,6 @@ game.onUpdateInterval(ENEMY_SPAWN_INTERVAL_MS, function () {
 })
 
 
-
+}
 
 

@@ -3309,12 +3309,12 @@ function updateAgilityProjectilesMotionFor(
     const fMin = sBack
     const fMax = sFront + 2 // include nose
 
-    function cornerX(f: number, wside: number) {
-        return nx * f + sx * wside
-    }
-    function cornerY(f: number, wside: number) {
-        return ny * f + sy * wside
-    }
+//    function cornerX(f: number, wside: number) {
+ //       return nx * f + sx * wside
+//    }
+ //   function cornerY(f: number, wside: number) {
+  //      return ny * f + sy * wside
+ //   }
 
     const xs = [
         cornerX(fMin, -sideHalf),

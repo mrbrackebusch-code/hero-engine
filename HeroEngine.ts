@@ -5792,7 +5792,7 @@ game.onUpdateInterval(ENEMY_SPAWN_INTERVAL_MS, function () {
     spawnEnemyOfKind(kind, s.x, s.y)
 })
 
-}
+
 
 
 

@@ -208,6 +208,58 @@ namespace SpriteKind {
 
 namespace HeroEngine {
 
+    
+const HERO_DATA = {
+    HP: "hp", MAX_HP: "maxHp", MANA: "mana", MAX_MANA: "maxMana",
+    FAMILY: "family", BUTTON: "btn",
+    TRAIT1: "t1", TRAIT2: "t2", TRAIT3: "t3", TRAIT4: "t4",
+    INPUT_LOCKED: "inputLocked", STORED_VX: "sVx", STORED_VY: "sVy",
+    TARGET_START_MS: "tStart", TARGET_LOCK_MS: "tLock",
+    IS_CONTROLLING_SPELL: "isCtrlSpell",
+    COMBO_COUNT: "comboCount", COMBO_MULT: "comboMult",
+    LAST_HIT_TIME: "lastHit", LAST_MOVE_KEY: "lastMoveKey",
+    IFRAME_UNTIL: "iUntil",
+    AGI_DASH_UNTIL: "aDashUntil",      // when AGI dash ends (ms)
+    AGI_COMBO_UNTIL: "aComboUntil",    // when AGI combo window ends (ms)
+    STR_INNER_RADIUS: "strInnerR",     // STR smash inner radius (per-hero cache)
+    OWNER: "owner",                    // which player "owns" this hero
+
+    // NEW: engine-side state we want exposed
+    BUSY_UNTIL: "busyUntil",           // heroBusyUntil[heroIndex]
+    MOVE_SPEED_MULT: "mvMult",         // heroMoveSpeedMult[heroIndex]
+    DAMAGE_AMP_MULT: "dmgMult",        // heroDamageAmpMult[heroIndex]
+    BUFF_JSON: "buffsJson",             // JSON snapshot of heroBuffs[heroIndex]
+
+    // NEW: for tile-collision rollback
+    PREV_X: "prevX",
+    PREV_Y: "prevY"
+}
+
+
+const ENEMY_DATA = {
+    HP: "hp",
+    MAX_HP: "maxHp",
+
+    SPEED: "spd",                 // base movement speed for homing AI
+    TOUCH_DAMAGE: "touchDmg",     // contact damage vs heroes
+    REGEN_PCT: "regenPct",        // % regen per tick (if used later)
+
+    SLOW_PCT: "slowPct",
+    SLOW_UNTIL: "slowUntil",
+    WEAKEN_PCT: "weakPct",
+    WEAKEN_UNTIL: "weakUntil",
+    KNOCKBACK_UNTIL: "kbUntil",
+
+    ATK_PHASE: "atkPhase",        // current attack state (enum/int)
+    ATK_UNTIL: "atkUntil",        // time current attack phase ends
+    ATK_COOLDOWN_UNTIL: "atkCd",  // when enemy can attack again
+
+    NAME: "name",                 // string: logical name / kind (e.g. "GRUNT")
+    FAMILY: "family"              // string: higher-level family (e.g. "slime")
+}
+
+    
+    
     // Block-safe function type for student logic
     export type HeroLogicFn = (
         button: string,
@@ -547,6 +599,7 @@ const AGI_LANDING_BUFFER_MS = 80
 const HERO_DAMAGE_FLASH_MS = 150
 const AGI_MIN_VISUAL_LEN = 3
 
+
 // --------------------------------------------------------------
 // HERO_DATA – sprite data schema for hero sprites
 // Ownership:
@@ -556,32 +609,6 @@ const AGI_MIN_VISUAL_LEN = 3
 //                 combo handling, AGI/STR/INT modules, auras
 // --------------------------------------------------------------
 
-const HERO_DATA = {
-    HP: "hp", MAX_HP: "maxHp", MANA: "mana", MAX_MANA: "maxMana",
-    FAMILY: "family", BUTTON: "btn",
-    TRAIT1: "t1", TRAIT2: "t2", TRAIT3: "t3", TRAIT4: "t4",
-    INPUT_LOCKED: "inputLocked", STORED_VX: "sVx", STORED_VY: "sVy",
-    TARGET_START_MS: "tStart", TARGET_LOCK_MS: "tLock",
-    IS_CONTROLLING_SPELL: "isCtrlSpell",
-    COMBO_COUNT: "comboCount", COMBO_MULT: "comboMult",
-    LAST_HIT_TIME: "lastHit", LAST_MOVE_KEY: "lastMoveKey",
-    IFRAME_UNTIL: "iUntil",
-    AGI_DASH_UNTIL: "aDashUntil",      // when AGI dash ends (ms)
-    AGI_COMBO_UNTIL: "aComboUntil",    // when AGI combo window ends (ms)
-    STR_INNER_RADIUS: "strInnerR",     // STR smash inner radius (per-hero cache)
-    OWNER: "owner",                    // which player "owns" this hero
-
-    // NEW: engine-side state we want exposed
-    BUSY_UNTIL: "busyUntil",           // heroBusyUntil[heroIndex]
-    MOVE_SPEED_MULT: "mvMult",         // heroMoveSpeedMult[heroIndex]
-    DAMAGE_AMP_MULT: "dmgMult",        // heroDamageAmpMult[heroIndex]
-    BUFF_JSON: "buffsJson",             // JSON snapshot of heroBuffs[heroIndex]
-
-    // NEW: for tile-collision rollback
-    PREV_X: "prevX",
-    PREV_Y: "prevY"
-}
-
 
 // --------------------------------------------------------------
 // ENEMY_DATA – sprite data schema for enemies
@@ -590,28 +617,6 @@ const HERO_DATA = {
 //   • Read by:    updateEnemyHoming(), updateEnemyEffects(),
 //                 applyDamageToEnemyIndex(), wave logic
 // --------------------------------------------------------------
-const ENEMY_DATA = {
-    HP: "hp",
-    MAX_HP: "maxHp",
-
-    SPEED: "spd",                 // base movement speed for homing AI
-    TOUCH_DAMAGE: "touchDmg",     // contact damage vs heroes
-    REGEN_PCT: "regenPct",        // % regen per tick (if used later)
-
-    SLOW_PCT: "slowPct",
-    SLOW_UNTIL: "slowUntil",
-    WEAKEN_PCT: "weakPct",
-    WEAKEN_UNTIL: "weakUntil",
-    KNOCKBACK_UNTIL: "kbUntil",
-
-    ATK_PHASE: "atkPhase",        // current attack state (enum/int)
-    ATK_UNTIL: "atkUntil",        // time current attack phase ends
-    ATK_COOLDOWN_UNTIL: "atkCd",  // when enemy can attack again
-
-    NAME: "name",                 // string: logical name / kind (e.g. "GRUNT")
-    FAMILY: "family"              // string: higher-level family (e.g. "slime")
-}
-
 
 // List of visual monster variants to cycle through on spawn.
 // You can (and should) extend this to all ~40 you care about.

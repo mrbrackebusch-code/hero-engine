@@ -1,4 +1,5 @@
 
+
 // --------------------------------------------------------------
 // Sprite kinds - type declarations for TS (no top-level create()) DON'T COPY THIS OVER TO PHASER! It is already there
 // --------------------------------------------------------------
@@ -224,7 +225,7 @@ namespace HeroEngine {
         direction: string
     ) => void;
 
-    
+
     function defaultHeroLogic(
         button: string,
         heroIndex: number,
@@ -234,20 +235,20 @@ namespace HeroEngine {
         return [FAMILY.STRENGTH, 0, 0, 0, 0, ELEM.NONE, ANIM.ID.IDLE];
     }
 
-function defaultHeroAnim(
-    hero: Sprite,
-    animKey: string,
-    timeMs: number,
-    direction: string
-): void {
+    function defaultHeroAnim(
+        hero: Sprite,
+        animKey: string,
+        timeMs: number,
+        direction: string
+    ): void {
 
-    // OWNER, not index, determines which hero it is
-    const owner = sprites.readDataNumber(hero, HERO_DATA.OWNER);
+        // OWNER, not index, determines which hero it is
+        const owner = sprites.readDataNumber(hero, HERO_DATA.OWNER);
 
-    // Hardcoded idle sprites for each hero
-    // These NEVER appear in student project, so Blocks stays clean.
+        // Hardcoded idle sprites for each hero
+        // These NEVER appear in student project, so Blocks stays clean.
 
-    const idle1 = img`
+        const idle1 = img`
         . . . . . . f f f f . . . . . .
         . . . . f f f 2 2 f f f . . . .
         . . . f f f 2 2 2 2 f f f . . .
@@ -266,7 +267,7 @@ function defaultHeroAnim(
         . . . . . f f . . f f . . . . .
     `;
 
-    const idle2 = img`
+        const idle2 = img`
         . . . . . . f f f f . . . . . .
         . . . . f f f a a f f f . . . .
         . . . f f f a a a a f f f . . .
@@ -285,7 +286,7 @@ function defaultHeroAnim(
         . . . . . f f . . f f . . . . .
     `;
 
-    const idle3 = img`
+        const idle3 = img`
         . . . . . . f f f f . . . . . .
         . . . . f f f 7 7 f f f . . . .
         . . . f f f 7 7 7 7 f f f . . .
@@ -304,7 +305,7 @@ function defaultHeroAnim(
         . . . . . f f . . f f . . . . .
     `;
 
-    const idle4 = img`
+        const idle4 = img`
         . . . . . . f f f f . . . . . .
         . . . . f f f 8 8 f f f . . . .
         . . . f f f 8 8 8 8 f f f . . .
@@ -323,12 +324,12 @@ function defaultHeroAnim(
         . . . . . f f . . f f . . . . .
     `;
 
-    if (owner === 1) hero.setImage(idle1);
-    else if (owner === 2) hero.setImage(idle2);
-    else if (owner === 3) hero.setImage(idle3);
-    else if (owner === 4) hero.setImage(idle4);
-    else hero.setImage(idle1);
-}
+        if (owner === 1) hero.setImage(idle1);
+        else if (owner === 2) hero.setImage(idle2);
+        else if (owner === 3) hero.setImage(idle3);
+        else if (owner === 4) hero.setImage(idle4);
+        else hero.setImage(idle1);
+    }
 
 
 
@@ -344,7 +345,7 @@ function defaultHeroAnim(
     export let animateHero3Hook: HeroAnimFn = defaultHeroAnim;
     export let animateHero4Hook: HeroAnimFn = defaultHeroAnim;
 
-    
+
     // Overridable hook for hero logic.
     // Arcade: stays null → we fall back to runHeroLogicForHero.
     // Phaser: heroEnginePhaserGlue.ts overrides this.
@@ -367,8 +368,8 @@ function defaultHeroAnim(
 
         ensureHeroSpriteKinds();
 
-        initWorldTileMap() 
-        
+        initWorldTileMap()
+
         scene.setBackgroundColor(1);
         tiles.setCurrentTilemap(tilemap`level1`)
         setupHeroes();
@@ -1326,7 +1327,7 @@ function runHeroLogicForHero(heroIndex: number, button: string) {
 
     //let out: number[];
     let out: any[];
-    
+
     try {
         out = fn(button, heroIndex, localEnemies, localHeroes);
     } catch (e) {
@@ -1359,34 +1360,34 @@ HeroEngine.runHeroLogicForHeroHook = runHeroLogicForHero;
 
 
 
-    // Positional unpack (allow strings or numbers from Blocks)
-    // 0: family, 1–4: trait pools, 5: element, 6: anim
-    function coerceFamily(val: any): number {
-        if (typeof val === "string") {
-            const s = val.toLowerCase()
-            if (s === "strength") return FAMILY.STRENGTH
-            if (s === "agility") return FAMILY.AGILITY
-            if (s === "intelligence" || s === "intellect") return FAMILY.INTELLECT
-            if (s === "support" || s === "heal") return FAMILY.HEAL
-        }
-        return (val | 0)
+// Positional unpack (allow strings or numbers from Blocks)
+// 0: family, 1–4: trait pools, 5: element, 6: anim
+function coerceFamily(val: any): number {
+    if (typeof val === "string") {
+        const s = val.toLowerCase()
+        if (s === "strength") return FAMILY.STRENGTH
+        if (s === "agility") return FAMILY.AGILITY
+        if (s === "intelligence" || s === "intellect") return FAMILY.INTELLECT
+        if (s === "support" || s === "heal") return FAMILY.HEAL
     }
+    return (val | 0)
+}
 
-    function coerceElement(val: any): number {
-        if (typeof val === "string") {
-            const s = val.toLowerCase()
-            if (s === "none") return ELEM.NONE
-            if (s === "grass" || s === "plant" || s === "plants") return ELEM.GRASS
-            if (s === "fire") return ELEM.FIRE
-            if (s === "water") return ELEM.WATER
-            if (s === "electric" || s === "lightning") return ELEM.ELECTRIC
-            // Earth support — you'll add ELEM.EARTH yourself
-            if (s === "earth" && (ELEM as any).EARTH !== undefined) {
-                return (ELEM as any).EARTH
-            }
+function coerceElement(val: any): number {
+    if (typeof val === "string") {
+        const s = val.toLowerCase()
+        if (s === "none") return ELEM.NONE
+        if (s === "grass" || s === "plant" || s === "plants") return ELEM.GRASS
+        if (s === "fire") return ELEM.FIRE
+        if (s === "water") return ELEM.WATER
+        if (s === "electric" || s === "lightning") return ELEM.ELECTRIC
+        // Earth support — you'll add ELEM.EARTH yourself
+        if (s === "earth" && (ELEM as any).EARTH !== undefined) {
+            return (ELEM as any).EARTH
         }
-        return (val | 0)
     }
+    return (val | 0)
+}
 
 
 function calculateMoveStatsForFamily(family: number, button: string, traits: number[]) {
@@ -1411,7 +1412,7 @@ function doHeroMoveForPlayer(playerId: number, button: string) {
     if (DEBUG_HERO_LOGIC) {
         console.log("[doHeroMoveForPlayer] ENTER playerId=" + playerId + "button=" + button + "heroIndex=" + heroIndex)
     }
-    
+
     // Trap world time so the wrapper/save system can see it
     worldRuntimeMs = now
 
@@ -1430,7 +1431,7 @@ function doHeroMoveForPlayer(playerId: number, button: string) {
 
 
 
-        // -----------------------------
+    // -----------------------------
     // Student logic (OUT array)
     // Shape: [family, t1, t2, t3, t4, element, animId]
     // -----------------------------
@@ -1485,21 +1486,21 @@ function doHeroMoveForPlayer(playerId: number, button: string) {
     const element = coerceElement(out[5])    // ELEMENT
 
 
-        
+
     // Positional unpack (avoid OUT.* at runtime in Arcade)
-//    const family = out[0] | 0;  // FAMILY
-//    const t1 = out[1] | 0;      // TRAIT1
-//    const t2 = out[2] | 0;      // TRAIT2
-//    const t3 = out[3] | 0;      // TRAIT3
-//    const t4 = out[4] | 0;      // TRAIT4
-//    const element = out[5] | 0; // ELEMENT
-//    const animId = out[6] | 0;  // ANIM_ID
+    //    const family = out[0] | 0;  // FAMILY
+    //    const t1 = out[1] | 0;      // TRAIT1
+    //    const t2 = out[2] | 0;      // TRAIT2
+    //    const t3 = out[3] | 0;      // TRAIT3
+    //    const t4 = out[4] | 0;      // TRAIT4
+    //    const element = out[5] | 0; // ELEMENT
+    //    const animId = out[6] | 0;  // ANIM_ID
 
 
 
 
 
-    
+
     // traits[1..4] are the same pools as before; traits[5] holds element for future use
     const traits = [0, t1, t2, t3, t4, element]
 
@@ -1524,7 +1525,7 @@ function doHeroMoveForPlayer(playerId: number, button: string) {
     }
 
 
-    
+
     // Trait-driven move stats (per family)
     const stats = calculateMoveStatsForFamily(family, button, traits)
 
@@ -1596,10 +1597,10 @@ function doHeroMoveForPlayer(playerId: number, button: string) {
     // --- Control lock & agility extras ---
 
     // STR / AGI / INT use timed lock via heroBusyUntil
-  
+
     if (family == FAMILY.STRENGTH || family == FAMILY.AGILITY || family == FAMILY.INTELLECT) {
         lockHeroControls(heroIndex)
-        
+
         const unlockAt = now + moveDuration
         heroBusyUntil[heroIndex] = unlockAt
 
@@ -1611,7 +1612,7 @@ function doHeroMoveForPlayer(playerId: number, button: string) {
         // NEW: mirror control-lock timestamp onto the hero sprite
         //sprites.setDataNumber(hero, HERO_DATA.BUSY_UNTIL, heroBusyUntil[heroIndex])
 
-    
+
     } else if (family == FAMILY.HEAL) {
         // SUPPORT/HEAL: no timed lock here.
         // beginSupportPuzzleForHero() will call lockHeroControls()
@@ -1784,7 +1785,7 @@ function createHeroForPlayer(playerId: number, startX: number, startY: number) {
     // NEW: seed previous position for collisions
     sprites.setDataNumber(hero, HERO_DATA.PREV_X, hero.x)
     sprites.setDataNumber(hero, HERO_DATA.PREV_Y, hero.y)
-    
+
     const heroIndex = heroes.length; heroes.push(hero)
     playerToHeroIndex[playerId] = heroIndex
 
@@ -1833,10 +1834,10 @@ function createHeroForPlayer(playerId: number, startX: number, startY: number) {
 }
 
 function setupHeroes() {
-    
+
     const W = userconfig.ARCADE_SCREEN_WIDTH
     const H = userconfig.ARCADE_SCREEN_HEIGHT
-    const centerW = W/2
+    const centerW = W / 2
     const centerH = H / 2
     const offset = 20
 
@@ -1930,7 +1931,7 @@ function callHeroAnim(heroIndex: number, animKey: string, timeMs: number) {
     if (family == FAMILY.STRENGTH || family == FAMILY.INTELLECT || family == FAMILY.HEAL) hero.startEffect(effects.trail, timeMs)
     const direction = getHeroDirectionName(heroIndex)
     const playerId = sprites.readDataNumber(hero, HERO_DATA.OWNER)
-    
+
     if (playerId == 1) HeroEngine.animateHero1Hook(hero, animKey, timeMs, direction)
     else if (playerId == 2) HeroEngine.animateHero2Hook(hero, animKey, timeMs, direction)
     else if (playerId == 3) HeroEngine.animateHero3Hook(hero, animKey, timeMs, direction)
@@ -2013,7 +2014,7 @@ function regenHeroManaAll(percentOfMax: number) {
         const maxM = sprites.readDataNumber(hero, HERO_DATA.MAX_MANA); if (maxM <= 0) continue
         let mana = sprites.readDataNumber(hero, HERO_DATA.MANA)
         let gain = Math.idiv(maxM * percentOfMax, 100)
-        if (gain < 1 && mana < maxM) gain = 5 //1 percent normally, 5 for letting students test
+        if (gain < 1 && mana < maxM) gain = 1
         mana = Math.min(maxM, mana + gain)
         sprites.setDataNumber(hero, HERO_DATA.MANA, mana)
         updateHeroManaBar(i)
@@ -3499,7 +3500,7 @@ function beginIntellectTargeting(
 
     // Control time window (our own floor / timer detonation)
     const ctrlUntil = now + lifespanMs
-//    sprites.setDataNumber(spell, "INT_CTRL_UNTIL", ctrlUntil)
+    //    sprites.setDataNumber(spell, "INT_CTRL_UNTIL", ctrlUntil)
 
     sprites.setDataNumber(spell, INT_CTRL_UNTIL_KEY, ctrlUntil)
 
@@ -3596,7 +3597,7 @@ function updateIntellectSpellsControl() {
         const spell = heroControlledSpells[i]; if (!spell) continue
 
         // Fizzle if floor elapsed and no detonation yet
-//        const ctrlUntil = sprites.readDataNumber(spell, "INT_CTRL_UNTIL") | 0
+        //        const ctrlUntil = sprites.readDataNumber(spell, "INT_CTRL_UNTIL") | 0
 
         const ctrlUntil = sprites.readDataNumber(spell, INT_CTRL_UNTIL_KEY) | 0
 
@@ -4179,7 +4180,7 @@ function updateHeroBuffs(now: number) {
             }
             sprites.setDataString(hero, HERO_DATA.BUFF_JSON, JSON.stringify(snapshot))
         }
-    
+
 
 
 
@@ -4686,10 +4687,10 @@ function completeSupportPuzzleForHero(heroIndex: number) {
 
 
 const ENEMY_KIND = {
-    GRUNT:  { maxHP: 50,  speed: 28, touchDamage: 8,  tint: 6  /* green  */ },
-    RUNNER: { maxHP: 30,  speed: 42, touchDamage: 6,  tint: 7  /* yellow */ },
-    BRUTE:  { maxHP: 160, speed: 18, touchDamage: 15, tint: 2  /* red    */ },
-    ELITE:  { maxHP: 260, speed: 22, touchDamage: 20, tint: 10 /* purple */ }
+    GRUNT: { maxHP: 50, speed: 28, touchDamage: 8, tint: 6  /* green  */ },
+    RUNNER: { maxHP: 30, speed: 42, touchDamage: 6, tint: 7  /* yellow */ },
+    BRUTE: { maxHP: 160, speed: 18, touchDamage: 15, tint: 2  /* red    */ },
+    ELITE: { maxHP: 260, speed: 22, touchDamage: 20, tint: 10 /* purple */ }
 }
 
 function enemyImageForKind(kind: string): Image {
@@ -5468,7 +5469,7 @@ game.onUpdate(function () {
 
     // NEW: enforce collisions with logical wall tiles
     resolveTilemapCollisions()
-    
+
     for (let hi = 0; hi < heroes.length; hi++) { const h = heroes[hi]; if (h) debugAgilityDashProgress(h, hi) }
     updateEnemyHoming(now)             // AI + attacks
 
@@ -5531,9 +5532,9 @@ game.onUpdateInterval(80, function () {
 });
 
 
-game.onUpdateInterval(500, function () { 
+game.onUpdateInterval(500, function () {
     if (!HeroEngine._isStarted()) return
-    regenHeroManaAll(2) 
+    regenHeroManaAll(2)
 })
 
 
@@ -5698,7 +5699,6 @@ game.onUpdateInterval(ENEMY_SPAWN_INTERVAL_MS, function () {
     const kind = pickEnemyKindForWave(currentWaveIndex)
     spawnEnemyOfKind(kind, s.x, s.y)
 })
-
 
 
 
